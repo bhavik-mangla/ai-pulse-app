@@ -1,0 +1,10 @@
+{
+  "appId": "com.daily.aipulse",
+  "appName": "AI Pulse",
+  "webDir": "www",
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": true
+    }
+  }
+}
