@@ -1,0 +1,25 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Capacitor
+/android/.gradle/
+/android/build/
+/android/app/build/
+/ios/App/build/
+/ios/App/Pods/
+/ios/App/App/public/
+/android/app/src/main/assets/public/
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# OS
+.DS_Store
+*/.DS_Store
+Thumbs.db
