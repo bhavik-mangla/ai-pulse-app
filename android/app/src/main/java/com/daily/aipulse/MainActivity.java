@@ -1,4 +1,4 @@
-package com.aipulse.app;
+package com.daily.aipulse;
 
 import com.getcapacitor.BridgeActivity;
 
