@@ -2,7 +2,20 @@
 
 **Empowering Indian Citizens with Government Intelligence on the go.**
 
-AI Pulse is the mobile companion to the GovNotify platform. Built using **Capacitor**, it provides a high-performance, native-like experience for accessing official Indian government notifications, enriched with AI insights and multi-language support.
+AI Pulse is the mobile companion to the [AIPulse Backend](https://github.com/bhavik-mangla/aipulse-backend). Built using **Capacitor**, it provides a high-performance, native-like experience for accessing official Indian government notifications and general news, enriched with AI insights and multi-language support.
+
+---
+
+## 📥 Download Now
+
+<a href="https://play.google.com/store/apps/details?id=com.daily.aipulse">
+  <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="80">
+</a>
+<a href="https://apps.apple.com/us/app/ai-pulse-daily-short-news/id6770227108">
+  <img src="https://developer.apple.com/app-store/marketing/guidelines/images/badge-download-on-the-app-store.svg" height="54" style="margin-bottom: 13px;">
+</a>
+
+---
 
 [![Capacitor](https://img.shields.io/badge/Capacitor-Ready-blue.svg)](https://capacitorjs.com/)
 [![React](https://img.shields.io/badge/Frontend-Vanilla_JS/React-green.svg)](https://reactjs.org/)
@@ -12,7 +25,7 @@ AI Pulse is the mobile companion to the GovNotify platform. Built using **Capaci
 
 ## 🌟 Overview
 
-The AI Pulse app is designed to deliver deterministic government intel directly to citizens' mobile devices. It leverages the robust backend of GovNotify to provide:
+The AI Pulse app is designed to deliver deterministic intelligence directly to citizens' mobile devices. It leverages the robust backend of AIPulse to provide:
 - **Daily Digests**: AI-summarized notifications in English and Hindi.
 - **Push-like Speed**: Lightweight web-core with native performance.
 - **Offline Access**: Essential notification metadata cached for quick viewing.
@@ -24,7 +37,7 @@ The AI Pulse app is designed to deliver deterministic government intel directly 
 - **Framework**: [Capacitor](https://capacitorjs.com/) (Cross-platform Native Bridge)
 - **Frontend**: Vanilla HTML/CSS/JS (Migrating to React/TypeScript)
 - **Platforms**: Android & iOS
-- **Backend API**: Connects to the [GovNotify API](https://github.com/bhavik-mangla/govnotify)
+- **Backend API**: Connects to the [AIPulse Backend API](https://github.com/bhavik-mangla/aipulse-backend)
 
 ---
 
