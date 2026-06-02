@@ -1,8 +1,8 @@
 # 📱 AI Pulse Mobile App
 
-**Empowering Indian Citizens with Government Intelligence on the go.**
+**Stay Informed with General News and Official Government Intelligence on the go.**
 
-AI Pulse is the mobile companion to the [AIPulse Backend](https://github.com/bhavik-mangla/aipulse-backend). Built using **Capacitor**, it provides a high-performance, native-like experience for accessing official Indian government notifications and general news, enriched with AI insights and multi-language support.
+AI Pulse is the mobile companion to the [AIPulse Backend](https://github.com/bhavik-mangla/aipulse-backend). Built using **Capacitor**, it provides a high-performance, native-like experience for accessing general news and official government notifications, enriched with AI insights and multi-language support.
 
 ---
 
@@ -29,9 +29,9 @@ To test the Android version, please follow these steps:
 
 ## 🌟 Overview
 
-The AI Pulse app is designed to deliver deterministic intelligence directly to citizens' mobile devices. It leverages the robust backend of AIPulse to provide:
-- **Daily Digests**: AI-summarized notifications in English and Hindi.
-- **Push-like Speed**: Lightweight web-core with native performance.
+The AI Pulse app is designed to deliver curated news and deterministic intelligence directly to your mobile device. It leverages the robust backend of AIPulse to provide:
+- **Clean UI**: AI-summarized notifications in English and Hindi.
+- **Fast Access**: Lightweight web-core with native performance.
 - **Offline Access**: Essential notification metadata cached for quick viewing.
 
 ---
@@ -101,4 +101,4 @@ We are looking to improve the app! If you're a friend joining the project, here'
 
 Distributed under the MIT License.
 
-*Built with ❤️ for a more informed India.*
+*Built with ❤️ for a more informed society.*
