@@ -1056,10 +1056,7 @@
             // Determine if it's a logo (local or from backend path we converted to local)
             const isLogo = finalImage && (finalImage.startsWith('assets/logos/') || finalImage.includes('/logos/'));
             
-            const imageStyle = isLogo
-              ? `background-image: url('${finalImage}'); background-size: contain; background-position: center; background-repeat: no-repeat; background-color: #ffffff;`
-              : `background-image: url('${finalImage}'); background-size: cover; background-position: center; background-color: var(--border);`;
-            
+            const imageStyle = `background-image: url('${finalImage}'); background-size: contain; background-position: center; background-repeat: no-repeat; background-color: #ffffff;`;
             const imageClass = isLogo ? 'card-image-bg logo' : 'card-image-bg';
 
             const cat = CATEGORIES.find(c => c.id === item.category);
