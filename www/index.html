@@ -84,18 +84,23 @@
       }
 
       nav {
-        background: rgba(var(--bg), 0.8);
+        background: var(--bg);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         position: fixed;
         top: 0;
         z-index: 2000;
         width: 100%;
-        padding-top: var(--safe-top);
-        height: var(--nav-height);
-        display: flex;
-        align-items: center;
         border-bottom: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+      }
+      .status-bar-spacer {
+        /* Use native safe area but pull everything up by 15px to close the gap */
+        height: env(safe-area-inset-top, 20px);
+        margin-top: -15px;
+        width: 100%;
+        background: var(--bg);
       }
       .nav-inner {
         display: flex;
@@ -106,6 +111,7 @@
         width: 100%;
         max-width: 1400px;
         margin: 0 auto;
+        height: 56px;
       }
       .brand {
         display: flex;
@@ -139,15 +145,15 @@
         background: var(--card-bg);
         border: 1px solid var(--border);
         color: var(--text);
-        width: 40px;
-        height: 40px;
-        border-radius: 12px;
+        width: 24px;
+        height: 24px;
+        border-radius: 8px;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
         transition: var(--transition);
-        font-size: 1.1rem;
+        font-size: 0.75rem;
       }
       .btn-icon:active {
         transform: scale(0.9);
@@ -157,15 +163,14 @@
       /* Make the language toggle expand to fit its text */
       #lang-btn {
         width: auto;
-        min-width: 48px;
-        padding: 0 12px;
-        height: 40px;
+        min-width: 32px;
+        padding: 0 6px;
+        height: 24px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         white-space: nowrap;
       }
-
       #feed-container {
         height: 100vh;
         overflow-y: scroll;
@@ -191,13 +196,14 @@
         align-items: center;
         justify-content: center;
         padding: 20px;
+        padding-top: 100px; /* ensure content doesn't collide with header */
       }
 
       .card-inner {
         position: relative;
         width: 100%;
         height: 100%;
-        max-height: 82vh;
+        max-height: 80vh;
         transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         transform-style: preserve-3d;
         border-radius: 36px;
@@ -231,17 +237,17 @@
       .card-image-wrap {
         position: relative;
         width: 100%;
-        height: 48%;
+        height: 33%;
         overflow: hidden;
         background: var(--border);
       }
 
-      /* ensure a solid white backdrop for any transparent images (SVGs/PNGs) */
+      /* ensure a solid backdrop for any transparent images (SVGs/PNGs) */
       .card-image-wrap::before {
         content: "";
         position: absolute;
         inset: 0;
-        background: #ffffff;
+        background: var(--card-bg);
         z-index: 1;
       }
 
@@ -266,14 +272,14 @@
         background-position: center;
         background-repeat: no-repeat;
         transform: none;
-        background-color: #ffffff; /* force white background for logos */
+        background-color: var(--card-bg); /* follow theme background for logos */
       }
 
       .card-content-front {
         padding: var(--space-md);
         display: flex;
         flex-direction: column;
-        height: 52%;
+        height: 69%;
         background: var(--card-bg);
       }
 
@@ -445,7 +451,7 @@
         top: calc(var(--nav-height) + 20px);
         left: 0;
         right: 0;
-        height: 40px;
+        height: 36px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -600,15 +606,16 @@
   </head>
   <body>
     <nav>
+      <div class="status-bar-spacer"></div>
       <div class="nav-inner">
         <div class="brand">
-          <a href="/" class="logo">AI<span>Pulse</span></a>
-          <div class="brand-text">
-            <span id="header-date" style="font-size: 0.6rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.1em;"></span>
+          <div style="display: flex; flex-direction: column; align-items: flex-start; justify-content: center;">
+            <a href="/" class="logo">AI<span>Pulse</span></a>
+            <span id="header-date" style="font-size: 0.55rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.05em; margin-top: -2px;"></span>
           </div>
         </div>
         <div class="nav-actions">
-          <button onclick="toggleLang()" class="btn-icon" id="lang-btn" style="font-size: 0.9rem; font-weight: 900;">हि</button>
+          <button onclick="toggleLang()" class="btn-icon" id="lang-btn">हिन्दी</button>
           <button onclick="toggleFilters(true)" class="btn-icon">⚙️</button>
           <button onclick="toggleTheme()" class="btn-icon">🌓</button>
         </div>
@@ -858,16 +865,16 @@
         if (!date) return "";
         const seconds = Math.floor((new Date() - new Date(date)) / 1000);
         let interval = seconds / 31536000;
-        if (interval > 1) return Math.floor(interval) + "y";
+        if (interval > 1) return Math.floor(interval) + "y ago";
         interval = seconds / 2592000;
-        if (interval > 1) return Math.floor(interval) + "mo";
+        if (interval > 1) return Math.floor(interval) + "mo ago";
         interval = seconds / 86400;
-        if (interval > 1) return Math.floor(interval) + "d";
+        if (interval > 1) return Math.floor(interval) + "d ago";
         interval = seconds / 3600;
-        if (interval > 1) return Math.floor(interval) + "h";
+        if (interval > 1) return Math.floor(interval) + "h ago";
         interval = seconds / 60;
-        if (interval > 1) return Math.floor(interval) + "m";
-        return "now";
+        if (interval > 1) return Math.floor(interval) + "m ago";
+        return "just now";
       }
 
       function updateDate() {
@@ -1056,17 +1063,13 @@
             // Determine if it's a logo (local or from backend path we converted to local)
             const isLogo = finalImage && (finalImage.startsWith('assets/logos/') || finalImage.includes('/logos/'));
             
-            const imageStyle = `background-image: url('${finalImage}'); background-size: contain; background-position: center; background-repeat: no-repeat; background-color: #ffffff;`;
+            const imageStyle = `background-image: url('${finalImage}'); background-size: contain; background-position: center; background-repeat: no-repeat; background-color: var(--card-bg);`;
             const imageClass = isLogo ? 'card-image-bg logo' : 'card-image-bg';
 
             const cat = CATEGORIES.find(c => c.id === item.category);
             const isGeneral = !cat || cat.id === 'other';
             const catLabel = cat ? cat[currentLang] : (currentLang === "en" ? "General" : "सामान्य");
             const timeStr = timeAgo(item.published_at || item.created_at);
-
-            const audienceTags = (item.affected_audience || [])
-              .map(a => `<span class="badge" style="background:transparent; border:1px solid var(--border);">${a}</span>`)
-              .join(" ");
 
             return `
                 <div class="feed-item ${isSeen ? 'seen' : ''} ${isHighImpact ? 'high-impact' : ''}" id="item-${item.id}" onclick="toggleFlip('${item.id}')">
@@ -1079,19 +1082,13 @@
                                     <span class="source-name-mini">${(item.source_name || item.source_id).toUpperCase()}</span>
                                     ${isSeen ? '<span style="margin-left:8px; opacity:0.6;">✓</span>' : ''}
                                 </div>
-                                <a href="${item.fetch_url || item.source_url}" target="_blank" class="btn-source-icon" onclick="event.stopPropagation()">
-                                    ↗
-                                </a>
                             </div>
                             <div class="card-content-front">
                                 ${!isGeneral ? `<span class="card-category">${catLabel}</span>` : ''}
                                 <h3 class="card-headline">${oneLiner || item.title}</h3>
                                 <div class="card-meta">
-                                    <div style="display: flex; flex-wrap: wrap; gap: 4px; width: 100%; margin-bottom: 8px;">
-                                        ${audienceTags}
-                                    </div>
                                     <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                                        <div class="card-meta-left">
+                                        <div class="card-meta-left" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; max-width: 70%;">
                                             <span>${timeStr}</span>
                                         </div>
                                         <span style="font-size: 0.7rem; color: var(--primary); font-weight: 800; letter-spacing: 0.05em;">${I18N[currentLang].details.toUpperCase()}</span>
