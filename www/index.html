@@ -91,6 +91,7 @@
         top: 0;
         z-index: 2000;
         width: 100%;
+        border-top: 1px solid var(--border);
         border-bottom: 1px solid var(--border);
         display: flex;
         flex-direction: column;
@@ -224,9 +225,18 @@
         background: var(--card-bg);
         border: 1px solid var(--border);
         box-shadow: var(--shadow);
+        /* Force hardware acceleration and layer separation for iOS */
+        -webkit-transform: translate3d(0,0,0);
+        transform: translate3d(0,0,0);
+      }
+
+      .card-front {
+        z-index: 2;
+        transform: rotateY(0deg);
       }
 
       .card-back {
+        z-index: 1;
         transform: rotateY(180deg);
         padding: var(--space-md);
         display: flex;
@@ -240,6 +250,9 @@
         height: 33%;
         overflow: hidden;
         background: var(--border);
+        /* Ensure image wrap also respects backface-visibility on Safari */
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
       }
 
       /* ensure a solid backdrop for any transparent images (SVGs/PNGs) */
@@ -261,6 +274,9 @@
         background-repeat: no-repeat;
         transition: transform 1.5s ease-out;
         background-color: transparent;
+        /* Force backface hiding on image itself for iOS */
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
       }
       
       .feed-item.active .card-image-bg:not(.logo) {
