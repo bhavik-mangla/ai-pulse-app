@@ -1004,6 +1004,14 @@
           filtered.map(s => `<option value="${s.id}">${s.name}</option>`).join("");
       }
 
+      function showToast(msg, duration = 3000) {
+        const t = document.getElementById("toast");
+        if (!t) return;
+        t.textContent = msg;
+        t.style.display = "block";
+        setTimeout(() => t.style.display = "none", duration);
+      }
+
       async function fetchFeed(forceRefresh = false, isLoadMore = false) {
         if (isLoading) return;
         isLoading = true;
@@ -1061,7 +1069,11 @@
 
           while (pagesProbed < maxProbes && !endReached) {
             const res = await fetch(getUrl(currentPage));
-            if (!res.ok) break;
+            if (!res.ok) {
+              if (res.status === 429) showToast("Too many requests. Please wait a moment.");
+              else if (res.status >= 500) showToast("Server error. Please try again later.");
+              break;
+            }
             
             const data = await res.json();
             const networkItems = data.items || [];
@@ -1111,7 +1123,10 @@
           } else if (isInitial && cachedItemIDs.size === 0) {
             container.innerHTML = `<p style="text-align:center; padding:100px; opacity:0.5;">${endReached ? 'You are all caught up!' : 'No new items found. Try again later.'}</p>`;
           }
-        } catch (e) { console.error("Fetch failed", e); }
+        } catch (e) { 
+          console.error("Fetch failed", e);
+          showToast("Network error. Check your connection.");
+        }
         finally { isLoading = false; }
       }
 
