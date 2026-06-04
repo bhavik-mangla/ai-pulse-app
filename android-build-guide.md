@@ -22,6 +22,7 @@ cd android
   -Pandroid.injected.signing.key.password=polo0909!Q
 ```
 **Output Path:** `app/build/outputs/bundle/release/app-release.aab`
+**Deobfuscation File:** `app/build/outputs/mapping/release/mapping.txt` (Upload this to Play Console if requested)
 
 ---
 
