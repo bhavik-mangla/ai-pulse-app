@@ -753,38 +753,67 @@
 
       const SEEN_DB_NAME = "AIPulseSeenDB";
       const SEEN_STORE_NAME = "seen_articles";
-      let seenIDs = new Set();
+
+      const SeenManager = {
+        db: null,
+        ids: new Set(),
+
+        async init() {
+          return new Promise((resolve) => {
+            const request = indexedDB.open(SEEN_DB_NAME, 1);
+            request.onupgradeneeded = (e) => e.target.result.createObjectStore(SEEN_STORE_NAME);
+            request.onsuccess = (e) => {
+              this.db = e.target.result;
+              const tx = this.db.transaction(SEEN_STORE_NAME, "readwrite");
+              const store = tx.objectStore(SEEN_STORE_NAME);
+              const results = [];
+              const req = store.openCursor();
+              
+              req.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                  results.push({ id: String(cursor.key), ts: cursor.value });
+                  cursor.continue();
+                } else {
+                  if (results.length > 5000) {
+                    results.sort((a, b) => (Number(a.ts) || 0) - (Number(b.ts) || 0));
+                    const toDelete = results.slice(0, results.length - 4000);
+                    const delTx = this.db.transaction(SEEN_STORE_NAME, "readwrite");
+                    const delStore = delTx.objectStore(SEEN_STORE_NAME);
+                    toDelete.forEach(item => delStore.delete(item.id));
+                    this.ids = new Set(results.slice(results.length - 4000).map(r => r.id));
+                  } else {
+                    this.ids = new Set(results.map(r => r.id));
+                  }
+                  resolve();
+                }
+              };
+            };
+            request.onerror = () => resolve();
+          });
+        },
+
+        has(id) {
+          return this.ids.has(String(id));
+        },
+
+        async add(id) {
+          const strId = String(id);
+          if (this.has(strId)) return;
+          this.ids.add(strId);
+          if (!this.db) return;
+          try {
+            const tx = this.db.transaction(SEEN_STORE_NAME, "readwrite");
+            tx.objectStore(SEEN_STORE_NAME).put(Date.now(), strId);
+          } catch (e) {}
+        }
+      };
+
       let cachedItemIDs = new Set();
       let currentPage = 1;
       let isLoading = false;
       let endReached = false;
       let isHighImpactOnly = false;
-
-      async function initSeenDB() {
-        return new Promise((resolve) => {
-          const request = indexedDB.open(SEEN_DB_NAME, 1);
-          request.onupgradeneeded = (e) => e.target.result.createObjectStore(SEEN_STORE_NAME);
-          request.onsuccess = (e) => {
-            const db = e.target.result;
-            const tx = db.transaction(SEEN_STORE_NAME, "readonly");
-            const store = tx.objectStore(SEEN_STORE_NAME);
-            const req = store.getAllKeys();
-            req.onsuccess = () => { seenIDs = new Set(req.result); resolve(); };
-          };
-          request.onerror = () => resolve();
-        });
-      }
-
-      async function markAsSeen(id) {
-        if (seenIDs.has(id)) return;
-        seenIDs.add(id);
-        const request = indexedDB.open(SEEN_DB_NAME, 1);
-        request.onsuccess = (e) => {
-          const db = e.target.result;
-          const tx = db.transaction(SEEN_STORE_NAME, "readwrite");
-          tx.objectStore(SEEN_STORE_NAME).put(true, id);
-        };
-      }
 
       const haptic = async (type = "impactHeavy") => {
         if (window.Capacitor?.Plugins?.Haptics) {
@@ -838,14 +867,14 @@
 
       async function init() {
         updateDate();
-        await initSeenDB();
+        await SeenManager.init();
         setTheme(localStorage.getItem("gov_theme") || "dark");
         
         try {
           await fetchMetadata();
-          const res = await fetch(`${API}/sources`);
+          const res = await fetch(`${API}/config/sources`);
           const d = await res.json();
-          ALL_SOURCES = d.sources || [];
+          ALL_SOURCES = d || [];
         } catch (e) {}
 
         setLang(currentLang);
@@ -854,8 +883,7 @@
           entries.forEach(entry => {
             if (entry.isIntersecting) {
               const id = entry.target.id.replace('item-', '');
-              markAsSeen(id);
-              entry.target.classList.add('seen');
+              SeenManager.add(id);
               entry.target.classList.add('active');
               haptic("impactLight");
             } else {
@@ -979,10 +1007,16 @@
       async function fetchFeed(forceRefresh = false, isLoadMore = false) {
         if (isLoading) return;
         isLoading = true;
-        if (forceRefresh) { currentPage = 1; endReached = false; }
+        
+        const isInitial = forceRefresh || (!isLoadMore && currentPage === 1);
+        if (forceRefresh) { 
+          currentPage = 1; 
+          endReached = false; 
+          cachedItemIDs.clear();
+        }
         
         const container = document.getElementById("cards-stack");
-        if (!isLoadMore && !forceRefresh) {
+        if (!isLoadMore && cachedItemIDs.size === 0) {
             container.innerHTML = `<div class="feed-item skeleton"><div class="card-inner" style="background:var(--border); opacity:0.3;"></div></div>`;
         }
         
@@ -994,55 +1028,88 @@
         const date = document.getElementById("filter-date").value;
         
         const pageSize = 15;
-        let url = `${API}/feed/latest?page=${currentPage}&page_size=${pageSize}&feed_type=${feedType}`;
-        if (q) url = `${API}/feed/search?q=${encodeURIComponent(q)}&page=${currentPage}&page_size=${pageSize}&feed_type=${feedType}`;
-        if (src) url += `&source_id=${src}`;
-        if (cat) url += `&category=${cat}`;
-        if (aud) url += `&audience=${encodeURIComponent(aud)}`;
-        if (date) url += `&date=${date}`;
-        if (isHighImpactOnly) url += `&impact_level=high_only`;
-        
+        const getUrl = (p) => {
+          let url = `${API}/feed/latest?page=${p}&page_size=${pageSize}&feed_type=${feedType}`;
+          if (q) url = `${API}/feed/search?q=${encodeURIComponent(q)}&page=${p}&page_size=${pageSize}&feed_type=${feedType}`;
+          if (src) url += `&source_id=${src}`;
+          if (cat) url += `&category=${cat}`;
+          if (aud) url += `&audience=${encodeURIComponent(aud)}`;
+          if (date) url += `&date=${date}`;
+          if (isHighImpactOnly) url += `&impact_level=high_only`;
+          return url;
+        };
+
         try {
           const cache = await caches.open("aipulse-cache");
           
-          if (currentPage === 1 && !q && !forceRefresh) {
-            const cachedResponse = await cache.match(url);
+          if (isInitial && !q && !forceRefresh) {
+            const cachedResponse = await cache.match(getUrl(1));
             if (cachedResponse) {
               const cachedData = await cachedResponse.json();
-              const items = cachedData.items || [];
-              items.forEach(item => cachedItemIDs.add(item.id));
-              renderFeed(items, false);
+              const items = (cachedData.items || []).filter(item => !SeenManager.has(item.id));
+              if (items.length > 0) {
+                items.forEach(item => cachedItemIDs.add(String(item.id)));
+                renderFeed(items, false);
+              }
             }
           }
 
-          const res = await fetch(url);
-          if (res.ok) {
+          let accumulatedItems = [];
+          let unseenCount = 0;
+          let pagesProbed = 0;
+          const maxProbes = isInitial ? 5 : 1;
+
+          while (pagesProbed < maxProbes && !endReached) {
+            const res = await fetch(getUrl(currentPage));
+            if (!res.ok) break;
+            
             const data = await res.json();
             const networkItems = data.items || [];
-            
             if (networkItems.length < pageSize) endReached = true;
+            
+            const filteredBatch = networkItems.filter(item => !SeenManager.has(item.id));
+            accumulatedItems.push(...filteredBatch);
+            unseenCount += filteredBatch.length;
+            
+            if (unseenCount >= 10 || endReached || q) {
+              break;
+            }
+            
+            currentPage++;
+            pagesProbed++;
+          }
 
-            if (currentPage === 1) {
-                networkItems.sort((a, b) => {
-                    const seenA = seenIDs.has(a.id);
-                    const seenB = seenIDs.has(b.id);
-                    const isNewA = !cachedItemIDs.has(a.id);
-                    const isNewB = !cachedItemIDs.has(b.id);
+          if (accumulatedItems.length > 0) {
+            if (isInitial) {
+                accumulatedItems.sort((a, b) => {
+                    const idA = String(a.id);
+                    const idB = String(b.id);
+                    const isNewA = !cachedItemIDs.has(idA);
+                    const isNewB = !cachedItemIDs.has(idB);
 
-                    if (!seenA && seenB) return -1;
-                    if (seenA && !seenB) return 1;
-                    if (!seenA && !seenB) {
-                        if (isNewA && !isNewB) return -1;
-                        if (!isNewA && isNewB) return 1;
-                    }
+                    if (isNewA && !isNewB) return -1;
+                    if (!isNewA && isNewB) return 1;
                     return new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at);
                 });
-                if (!q) cache.put(url, new Response(JSON.stringify(data)));
+                if (!q) {
+                  const cacheData = { items: accumulatedItems.slice(0, pageSize), total: accumulatedItems.length, page: 1, page_size: pageSize };
+                  cache.put(getUrl(1), new Response(JSON.stringify(cacheData)));
+                }
             }
 
-            networkItems.forEach(item => cachedItemIDs.add(item.id));
-            renderFeed(networkItems, isLoadMore);
+            let shouldAppend = isLoadMore;
+            if (isInitial && cachedItemIDs.size > 0) {
+                shouldAppend = true;
+                accumulatedItems = accumulatedItems.filter(item => !cachedItemIDs.has(String(item.id)));
+            }
+
+            if (accumulatedItems.length > 0) {
+                accumulatedItems.forEach(item => cachedItemIDs.add(String(item.id)));
+                renderFeed(accumulatedItems, shouldAppend);
+            }
             currentPage++;
+          } else if (isInitial && cachedItemIDs.size === 0) {
+            container.innerHTML = `<p style="text-align:center; padding:100px; opacity:0.5;">${endReached ? 'You are all caught up!' : 'No new items found. Try again later.'}</p>`;
           }
         } catch (e) { console.error("Fetch failed", e); }
         finally { isLoading = false; }
@@ -1054,13 +1121,9 @@
 
         const html = items.map((item) => {
             const { oneLiner, bullets } = parseSummary(item.summary, currentLang);
-            const isSeen = seenIDs.has(item.id);
             const isHighImpact = item.impact_level === "high" || item.impact_level === "critical";
             
-            // Image Fallback Strategy: Article Image -> Source Logo -> Placeholder
             let imageUrl = item.image_url;
-            
-            // If it's a backend logo path, try to use local asset first for better performance/reliability
             if (imageUrl && imageUrl.startsWith('/static/logos/')) {
                 const filename = imageUrl.split('/').pop();
                 imageUrl = `assets/logos/${filename}`;
@@ -1072,13 +1135,8 @@
                 const ext = LOGO_EXT[item.source_id] || "png";
                 imageUrl = `assets/logos/${item.source_id}.${ext}`;
             }
-            
-            // Final fallback
             const finalImage = imageUrl || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=1000";
-            
-            // Determine if it's a logo (local or from backend path we converted to local)
             const isLogo = finalImage && (finalImage.startsWith('assets/logos/') || finalImage.includes('/logos/'));
-            
             const imageStyle = `background-image: url('${finalImage}'); background-size: contain; background-position: center; background-repeat: no-repeat; background-color: var(--card-bg);`;
             const imageClass = isLogo ? 'card-image-bg logo' : 'card-image-bg';
 
@@ -1088,7 +1146,7 @@
             const timeStr = timeAgo(item.published_at || item.created_at);
 
             return `
-                <div class="feed-item ${isSeen ? 'seen' : ''} ${isHighImpact ? 'high-impact' : ''}" id="item-${item.id}" onclick="toggleFlip('${item.id}')">
+                <div class="feed-item ${isHighImpact ? 'high-impact' : ''}" id="item-${item.id}" onclick="toggleFlip('${item.id}')">
                     <div class="card-inner">
                         <div class="card-front">
                             <div class="card-image-wrap">
@@ -1096,7 +1154,6 @@
                                 <div class="card-overlay"></div>
                                 <div class="card-source-tag">
                                     <span class="source-name-mini">${(item.source_name || item.source_id).toUpperCase()}</span>
-                                    ${isSeen ? '<span style="margin-left:8px; opacity:0.6;">✓</span>' : ''}
                                 </div>
                             </div>
                             <div class="card-content-front">
