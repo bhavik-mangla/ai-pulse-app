@@ -30,18 +30,20 @@ To test the Android version, please follow these steps:
 ## 🌟 Overview
 
 The AI Pulse app is designed to deliver curated news and deterministic intelligence directly to your mobile device. It leverages the robust backend of AIPulse to provide:
-- **Clean UI**: AI-summarized notifications in English and Hindi.
-- **Fast Access**: Lightweight web-core with native performance.
-- **Offline Access**: Essential notification metadata cached for quick viewing.
+- **Reels-Style Feed**: A fluid, full-screen vertical scrolling experience optimized for quick consumption.
+- **Smart Visuals**: Automated image fallback using Wikipedia API and unified branding for government portals.
+- **Clean UI**: AI-summarized notifications in English and Hindi with impact-based triage.
+- **Zero-Cost Architecture**: Built to run completely free using GitHub Actions for ingestion and Vercel for the API.
 
 ---
 
 ## 🛠️ Tech Stack
 
 - **Framework**: [Capacitor](https://capacitorjs.com/) (Cross-platform Native Bridge)
-- **Frontend**: Vanilla HTML/CSS/JS (Migrating to React/TypeScript)
+- **Frontend**: Vanilla HTML/CSS/JS (Optimized for performance and low latency)
 - **Platforms**: Android & iOS
-- **Backend API**: Connects to the [AIPulse Backend API](https://github.com/bhavik-mangla/aipulse-backend)
+- **Automation**: GitHub Actions (for serverless data ingestion)
+- **Backend API**: Connects to the [AIPulse Backend API](https://github.com/bhavik-mangla/aipulse-backend) (Hosted on Vercel)
 
 ---
 
