@@ -242,6 +242,16 @@
         display: flex;
         flex-direction: column;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+      }
+
+      .feed-item.flipped .card-back {
+        z-index: 10;
+      }
+      .feed-item.flipped .card-front {
+        z-index: 1;
       }
 
       .card-image-wrap {
@@ -326,6 +336,8 @@
         max-height: 100%;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
         padding-right: 8px;
         word-wrap: break-word;
         white-space: normal;
@@ -507,6 +519,8 @@
         z-index: 3001;
         max-height: 85vh;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
       }
       #filters-overlay.active .bottom-sheet {
         bottom: 0;
