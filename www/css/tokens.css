@@ -24,7 +24,9 @@
   --space-lg: 36px;
   --touch-target: 48px;
   --safe-top: env(safe-area-inset-top, 20px);
-  --nav-height: calc(var(--safe-top) + 56px);
+  /* Header row plus the topic strip beneath it; feed items clear both. */
+  --topic-strip-height: 46px;
+  --nav-height: calc(var(--safe-top) + 56px + var(--topic-strip-height));
 
   /* Fluid Typography */
   --font-size-h1: clamp(1.4rem, 1.1rem + 1.5vw, 2.2rem);
@@ -59,7 +61,7 @@ html {
 }
 
 body {
-  font-family: "Inter", "Noto Sans Devanagari", system-ui, -apple-system, sans-serif;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
   background: var(--bg);
   color: var(--text);
   margin: 0;

@@ -1,0 +1,33 @@
+name: Bug report
+description: Something in the app is not working
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect instead?
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options: ["Android", "iOS", "Both", "Browser (running www/ locally)"]
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and OS version
+      placeholder: e.g. Pixel 7, Android 15
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshot or console output

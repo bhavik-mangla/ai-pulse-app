@@ -1,6 +1,6 @@
 /* Mutable app state shared between modules. */
 
-import { STORAGE_KEYS } from "./config.js";
+import { DEFAULT_COUNTRY, STORAGE_KEYS, detectCountry } from "./config.js";
 
 /** Safe localStorage read: private mode and blocked site data both throw. */
 export function readStored(key, fallback) {
@@ -20,15 +20,36 @@ export function writeStored(key, value) {
 }
 
 export const state = {
-  lang: readStored(STORAGE_KEYS.lang, "en"),
-  feedType: "news",
+  lang: "en",
+  /*
+   * Feed scope. Seeded from the device region on first run so a reader lands
+   * on something relevant without being asked, and remembered thereafter.
+   */
+  country: readStored(STORAGE_KEYS.country, "") || detectCountry() || DEFAULT_COUNTRY,
   page: 1,
   isLoading: false,
   endReached: false,
-  highImpactOnly: false,
+  topStoriesOnly: false,
   sources: [],
   renderedIds: new Set(),
+  /* Topics the reader chose; empty means show everything. */
+  interests: new Set(readStored(STORAGE_KEYS.interests, "").split(",").filter(Boolean)),
+  /* Which topic tab is active. FOR_YOU means "use my interests". */
+  topic: "__for_you__",
+  /* True while the saved-stories list is showing instead of the feed. */
+  showingSaved: false,
+  /*
+   * "unread" hides stories already read; "earlier" shows everything, newest
+   * first. Catching up should be the start of a second helping, not a dead
+   * end, so reaching the end of the unread feed offers to keep going.
+   */
+  mode: "unread",
 };
+
+/** Persist the chosen interests. */
+export function saveInterests() {
+  writeStored(STORAGE_KEYS.interests, [...state.interests].join(","));
+}
 
 export function resetPagination() {
   state.page = 1;

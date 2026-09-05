@@ -8,31 +8,49 @@ import { fitCard } from "./autofit.js";
 import { haptic } from "./haptics.js";
 import { SeenManager } from "./seen.js";
 import { state } from "./state.js";
+import { getStreak, recordStoryRead } from "./streak.js";
 import { timeAgo } from "./time.js";
+import { activeCategories } from "./topics.js";
 
 /* How many unseen stories to gather before rendering, and how hard to look. */
 const MIN_UNSEEN_BATCH = 10;
 const MAX_PROBE_PAGES = 5;
 
+/*
+ * Stories currently rendered, by id, so a card action can find the item it
+ * belongs to without re-fetching or stashing JSON in a data attribute.
+ */
+const rendered = new Map();
+
+/** The item behind a rendered card, or null once it has been replaced. */
+export function itemById(id) {
+  return rendered.get(String(id)) || null;
+}
+
 let activeObserver = null;
 let infiniteObserver = null;
 let preloadObserver = null;
 let showToast = () => {};
+let onStreakAdvanced = null;
 
 export function setToastHandler(fn) {
   showToast = fn;
+}
+
+/** Called the first time a day counts towards the reading streak. */
+export function setStreakHandler(fn) {
+  onStreakAdvanced = fn;
 }
 
 /** Current preferences-sheet values, as the API layer expects them. */
 export function currentFilters() {
   return {
     query: valueOf("search-q"),
-    feedType: state.feedType,
+    country: state.country,
     sourceId: valueOf("sel-src"),
-    category: valueOf("sel-cat"),
-    audience: valueOf("sel-audience"),
+    categories: activeCategories(),
     date: valueOf("filter-date"),
-    highImpactOnly: state.highImpactOnly,
+    topStoriesOnly: state.topStoriesOnly,
   };
 }
 
@@ -45,7 +63,12 @@ export function initObservers() {
           return;
         }
         entry.target.classList.add("active");
-        SeenManager.add(entry.target.dataset.id);
+        if (!SeenManager.has(entry.target.dataset.id)) {
+          SeenManager.add(entry.target.dataset.id);
+          recordStoryRead().then((streakAdvanced) => {
+            if (streakAdvanced) onStreakAdvanced?.(getStreak());
+          });
+        }
       });
     },
     { threshold: 0.6 }
@@ -92,6 +115,40 @@ function renderMessage(container, message) {
   container.innerHTML = `<p class="feed-message">${escapeHtml(message)}</p>`;
 }
 
+/**
+ * The "you are done" screen.
+ *
+ * Finishing is the whole promise of a short-news app, so the end of the feed
+ * gets a real screen rather than a line of grey text: what you read, the
+ * streak it earned, and a way back to the top.
+ */
+function renderCaughtUp(container, { read, streak }) {
+  /* Take both forms: naive "+s" turns "story" into "storys". */
+  const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  const streakLine =
+    streak.current > 0
+      ? `<p class="caught-up-streak">🔥 ${count(streak.current, "day", "days")} in a row</p>`
+      : streak.storiesNeeded > 0
+        ? `<p class="caught-up-streak muted">${count(streak.storiesNeeded, "more story", "more stories")} today to start a streak</p>`
+        : "";
+
+  container.innerHTML = `
+    <div class="feed-item caught-up">
+      <div class="caught-up-inner">
+        <div class="caught-up-mark" aria-hidden="true">✓</div>
+        <h2 class="caught-up-title">You are all caught up</h2>
+        <p class="caught-up-sub">${escapeHtml(count(read, "story", "stories"))} read today</p>
+        ${streakLine}
+        <button class="btn-action caught-up-action" data-action="read-earlier">
+          Keep reading earlier stories
+        </button>
+        <button class="btn-secondary" data-action="refresh-feed">
+          Check for new stories
+        </button>
+      </div>
+    </div>`;
+}
+
 /** Fill in relative timestamps left as data attributes by the card template. */
 function hydrateTimestamps(container) {
   container.querySelectorAll("[data-timeago]").forEach((el) => {
@@ -109,8 +166,10 @@ export function renderFeed(items, { append }) {
     container.insertAdjacentHTML("beforeend", html);
   } else {
     unobserveAll(container);
+    rendered.clear();
     container.innerHTML = html;
   }
+  items.forEach((item) => rendered.set(String(item.id), item));
 
   hydrateTimestamps(container);
   observeCards(container);
@@ -171,7 +230,9 @@ export async function loadFeed({ refresh = false, append = false } = {}) {
       const effectiveSize = Number(data.page_size) || PAGE_SIZE;
       if (items.length < effectiveSize) state.endReached = true;
 
-      collected.push(...items.filter((item) => !SeenManager.has(item.id)));
+      collected.push(
+        ...(state.mode === "earlier" ? items : items.filter((item) => !SeenManager.has(item.id)))
+      );
 
       if (collected.length >= MIN_UNSEEN_BATCH || state.endReached || filters.query) break;
 
@@ -182,7 +243,11 @@ export async function loadFeed({ refresh = false, append = false } = {}) {
     const fresh = collected.filter((item) => !state.renderedIds.has(String(item.id)));
 
     if (fresh.length) {
-      if (isInitial && !filters.query) {
+      /*
+       * Only the unread feed is cached. Caching the archive under the same key
+       * would make the next cold start open on stories already read.
+       */
+      if (isInitial && !filters.query && state.mode === "unread") {
         await writeCachedPage(buildFeedUrl(1, filters), {
           items: fresh.slice(0, PAGE_SIZE),
           total: fresh.length,
@@ -200,7 +265,17 @@ export async function loadFeed({ refresh = false, append = false } = {}) {
        */
       state.page = lastFetchedPage + 1;
     } else if (isInitial && state.renderedIds.size === 0 && container) {
-      renderMessage(container, state.endReached ? strings.caughtUp : strings.noNewItems);
+      const hasFilters = Boolean(
+        filters.query || filters.sourceId || filters.date || filters.topStoriesOnly
+      );
+      if (hasFilters) {
+        renderMessage(container, strings.noRecords);
+      } else if (state.mode === "earlier") {
+        renderMessage(container, strings.endOfArchive);
+      } else {
+        const streak = getStreak();
+        renderCaughtUp(container, { read: streak.todayCount, streak });
+      }
     }
   } finally {
     state.isLoading = false;
@@ -210,7 +285,9 @@ export async function loadFeed({ refresh = false, append = false } = {}) {
 /** Paint the cached first page immediately so the app is never blank. */
 async function renderFromCache(filters) {
   const cached = await readCachedPage(buildFeedUrl(1, filters));
-  const items = (cached?.items || []).filter((item) => !SeenManager.has(item.id));
+  const items = (cached?.items || []).filter(
+    (item) => state.mode === "earlier" || !SeenManager.has(item.id)
+  );
   if (!items.length) return;
   items.forEach((item) => state.renderedIds.add(String(item.id)));
   renderFeed(items, { append: false });
@@ -223,6 +300,34 @@ function reportRequestError(err, strings) {
     return;
   }
   showToast(strings.networkError);
+}
+
+/** Show the saved stories instead of the feed. */
+export function renderSaved(items) {
+  const container = $("cards-stack");
+  if (!container) return;
+
+  if (!items.length) {
+    container.innerHTML = `
+      <div class="feed-item caught-up">
+        <div class="caught-up-inner">
+          <div class="caught-up-mark" aria-hidden="true">☆</div>
+          <h2 class="caught-up-title">Nothing saved yet</h2>
+          <p class="caught-up-sub">Tap the star on a story to keep it here.</p>
+          <button class="btn-action caught-up-action" data-action="show-feed">
+            Back to stories
+          </button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  unobserveAll(container);
+  rendered.clear();
+  items.forEach((item) => rendered.set(String(item.id), item));
+  container.innerHTML = items.map((item) => renderCard(item, state.lang)).join("");
+  hydrateTimestamps(container);
+  observeCards(container);
 }
 
 export function flipCard(cardEl) {

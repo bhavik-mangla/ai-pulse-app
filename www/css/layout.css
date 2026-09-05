@@ -165,3 +165,155 @@ nav {
   max-width: 90vw;
   text-align: center;
 }
+
+/* --- Topic navigation --- */
+
+.topic-strip {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  height: var(--topic-strip-height);
+  padding: 0 var(--space-md) 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  /* The strip scrolls sideways; it must not drag the page with it. */
+  overscroll-behavior-x: contain;
+}
+
+.topic-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.topic-tab {
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.topic-tab.active {
+  background: var(--primary);
+  color: #000;
+}
+
+.topic-tab:active {
+  transform: scale(0.96);
+}
+
+/* --- Saved badge --- */
+
+.btn-saved {
+  position: relative;
+}
+
+.count-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #000;
+  font-size: 0.55rem;
+  font-weight: 900;
+  line-height: 15px;
+  text-align: center;
+}
+
+/* --- End of feed --- */
+
+.caught-up {
+  scroll-snap-align: start;
+}
+
+.caught-up-inner {
+  text-align: center;
+  padding: var(--space-md);
+  max-width: 340px;
+}
+
+.caught-up-mark {
+  width: 76px;
+  height: 76px;
+  margin: 0 auto var(--space-md);
+  border-radius: 50%;
+  background: var(--primary);
+  color: #000;
+  font-size: 2.2rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 30px var(--primary-glow);
+}
+
+.caught-up-title {
+  margin: 0 0 8px;
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.caught-up-sub {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.caught-up-streak {
+  margin: var(--space-sm) 0 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.caught-up-streak.muted {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.caught-up-action {
+  margin-top: var(--space-lg);
+}
+
+/* --- Reading-mode banner --- */
+
+.mode-banner {
+  position: fixed;
+  top: var(--nav-height);
+  left: 0;
+  right: 0;
+  z-index: 1900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 6px var(--space-md);
+  background: var(--card-hover);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.banner-action {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 2px 4px;
+}

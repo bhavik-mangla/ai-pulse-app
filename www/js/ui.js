@@ -1,9 +1,11 @@
-/* Chrome: theme, language, the preferences sheet and toasts. */
+/* Chrome: theme, language, region picker, preferences sheet and toasts. */
 
-import { AUDIENCES, CATEGORIES, I18N, STORAGE_KEYS } from "./config.js";
+import { CATEGORIES, COUNTRIES, I18N, STORAGE_KEYS, countryByCode } from "./config.js";
 import { $, escapeHtml } from "./dom.js";
 import { haptic } from "./haptics.js";
-import { state, writeStored } from "./state.js";
+import { bookmarkCount } from "./bookmarks.js";
+import { getSettings, isSupported, setDigest } from "./notify.js";
+import { saveInterests, state, writeStored } from "./state.js";
 import { formatHeaderDate } from "./time.js";
 
 let toastTimer = null;
@@ -24,6 +26,8 @@ export function showToast(message, duration = 3000) {
 export function setTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
   writeStored(STORAGE_KEYS.theme, theme);
+  const btn = $("theme-btn");
+  if (btn) btn.textContent = theme === "dark" ? "🌙" : "☀️";
 }
 
 export function toggleTheme() {
@@ -32,7 +36,33 @@ export function toggleTheme() {
   haptic("impactLight");
 }
 
-/* --- Language --- */
+/* --- Region --- */
+
+/** Render the scope chips; the active one is reflected in the header too. */
+export function renderCountryOptions() {
+  const wrap = $("country-options");
+  if (!wrap) return;
+  wrap.innerHTML = COUNTRIES.map(
+    (c) => `
+      <button class="chip${c.code === state.country ? " active" : ""}"
+              data-action="set-country" data-country="${escapeHtml(c.code)}">
+        <span class="chip-flag">${escapeHtml(c.flag || "")}</span>
+        ${escapeHtml(c.name)}
+      </button>`
+  ).join("");
+  syncCountryChip();
+}
+
+function syncCountryChip() {
+  const country = countryByCode(state.country);
+  const btn = $("country-btn");
+  if (btn) {
+    btn.textContent = country.flag || country.name;
+    btn.setAttribute("aria-label", `Region: ${country.name}`);
+  }
+}
+
+/* --- Interests --- */
 
 function fillSelect(id, placeholder, options) {
   const select = $(id);
@@ -46,42 +76,71 @@ function fillSelect(id, placeholder, options) {
   select.value = previous;
 }
 
-export function setLang(lang) {
-  state.lang = lang;
-  writeStored(STORAGE_KEYS.lang, lang);
-  const strings = I18N[lang];
+/** Render the interest chips and reflect which are selected. */
+export function renderInterests() {
+  const wrap = $("interest-options");
+  if (!wrap) return;
+  wrap.innerHTML = CATEGORIES.filter((c) => c.id !== "other")
+    .map(
+      (c) => `
+      <button class="chip${state.interests.has(c.id) ? " active" : ""}"
+              data-action="toggle-interest" data-interest="${escapeHtml(c.id)}">
+        <span class="chip-flag">${escapeHtml(c.emoji || "")}</span>
+        ${escapeHtml(c.en)}
+      </button>`
+    )
+    .join("");
+}
 
-  const langBtn = $("lang-btn");
-  if (langBtn) langBtn.textContent = lang === "en" ? "हिन्दी" : "English";
+/** Add or remove a topic from the reader's interests. */
+export function toggleInterest(id) {
+  if (state.interests.has(id)) state.interests.delete(id);
+  else state.interests.add(id);
+  saveInterests();
+  renderInterests();
+  haptic("impactLight");
+}
 
-  fillSelect(
-    "sel-cat",
-    strings.allCats,
-    CATEGORIES.map((c) => ({ value: c.id, label: c[lang] || c.en }))
-  );
-  fillSelect(
-    "sel-audience",
-    strings.whoAreYou,
-    AUDIENCES.map((a) => ({ value: a, label: a }))
-  );
+export function applyStrings() {
+  const strings = I18N.en;
 
-  const audienceLabel = $("label-audience");
-  if (audienceLabel) audienceLabel.textContent = strings.whoAreYou;
-
-  const impactLabel = $("label-high-impact");
-  if (impactLabel) impactLabel.textContent = strings.highImpactOnly;
-
+  renderInterests();
+  applyStaticLabels(strings);
   renderSourceFilter();
+}
+
+/** Text that lives in the sheet rather than being generated per item. */
+function applyStaticLabels(strings) {
+  const labels = {
+    "sheet-title": strings.preferences,
+    "label-region": strings.region,
+    "label-interests": strings.interests,
+    "hint-interests": strings.interestsHint,
+    "label-src": strings.sourceLabel,
+    "label-search": strings.search,
+    "label-date": strings.date,
+    "label-top-stories": strings.topStoriesOnly,
+    "label-digest": strings.dailyReminder,
+    "label-saved": strings.saved,
+    "btn-done": strings.done,
+    "btn-reset": strings.reset,
+  };
+  for (const [id, text] of Object.entries(labels)) {
+    const el = $(id);
+    if (el) el.textContent = text;
+  }
+  const search = $("search-q");
+  if (search) search.placeholder = strings.search;
 }
 
 /* --- Source filter --- */
 
 export function renderSourceFilter() {
-  const isNewsSource = (s) => s.id.includes("top_stories");
-  const options = state.sources
-    .filter((s) => (state.feedType === "news" ? isNewsSource(s) : !isNewsSource(s)))
-    .map((s) => ({ value: s.id, label: s.name }));
-  fillSelect("sel-src", I18N[state.lang].allPortals, options);
+  fillSelect(
+    "sel-src",
+    I18N[state.lang].allSources,
+    state.sources.map((s) => ({ value: s.id, label: s.name }))
+  );
 }
 
 /* --- Preferences sheet --- */
@@ -99,6 +158,96 @@ export function toggleFilters(show) {
     }, 300);
   }
   haptic("impactLight");
+}
+
+/* --- Saved --- */
+
+/** Show how many stories are saved, and hide the entry point when none are. */
+export function syncSavedCount() {
+  const count = bookmarkCount();
+  const badge = $("saved-count");
+  if (badge) {
+    badge.textContent = count ? String(count) : "";
+    badge.hidden = count === 0;
+  }
+}
+
+/* --- Reading mode --- */
+
+/**
+ * Show a banner while reading earlier stories.
+ *
+ * Without it, a reader who has scrolled into the archive has no way to tell
+ * that these are stories they may already have read, or how to get back.
+ */
+export function syncModeBanner() {
+  const banner = $("mode-banner");
+  if (!banner) return;
+  const earlier = state.mode === "earlier";
+  banner.hidden = !earlier;
+  if (earlier) {
+    banner.innerHTML =
+      `<span>${escapeHtml(I18N.en.readingEarlier)}</span>` +
+      `<button class="banner-action" data-action="back-to-latest">` +
+      `${escapeHtml(I18N.en.backToLatest)}</button>`;
+  }
+}
+
+/* --- Daily reminder --- */
+
+export function syncDigestControls() {
+  const row = $("digest-row");
+  if (!row) return;
+
+  /*
+   * The row starts hidden in the markup so it never flashes on a device that
+   * cannot schedule notifications; reveal it once we know this one can.
+   */
+  row.hidden = !isSupported();
+  if (row.hidden) return;
+
+  const { enabled, time } = getSettings();
+  const toggle = $("btn-digest");
+  if (toggle) {
+    toggle.classList.toggle("active", enabled);
+    toggle.setAttribute("aria-pressed", String(enabled));
+  }
+  const picker = $("digest-time");
+  if (picker) {
+    picker.value = time;
+    picker.hidden = !enabled;
+  }
+}
+
+/**
+ * Turn the daily reminder on or off, reporting honestly what happened.
+ *
+ * A browser cannot schedule a notification for a future day without a service
+ * worker and a push subscription, so the setting is remembered but says so
+ * rather than silently doing nothing.
+ */
+export async function toggleDigest(onMessage) {
+  const { enabled } = getSettings();
+  const result = await setDigest(!enabled, $("digest-time")?.value);
+  syncDigestControls();
+  haptic("impactLight");
+
+  const messages = {
+    enabled: "Daily reminder on",
+    disabled: "Daily reminder off",
+    denied: "Notifications are blocked in your device settings",
+    "web-only": "Reminders only work in the installed app",
+    unsupported: "Reminders are not available on this device",
+  };
+  onMessage?.(messages[result] || "");
+}
+
+export async function changeDigestTime(onMessage) {
+  const { enabled } = getSettings();
+  if (!enabled) return;
+  const result = await setDigest(true, $("digest-time")?.value);
+  syncDigestControls();
+  if (result === "enabled") onMessage?.("Reminder time updated");
 }
 
 export function updateHeaderDate() {
