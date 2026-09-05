@@ -49,11 +49,13 @@
           </div>
         </div>
         <div class="nav-actions">
-          <button class="btn-icon" id="lang-btn" data-action="toggle-lang" aria-label="Switch language">
-            हिन्दी
+          <button class="btn-icon" id="country-btn" data-action="open-filters" aria-label="Region">
+            🌍
           </button>
           <button class="btn-icon" data-action="open-filters" aria-label="Preferences">⚙️</button>
-          <button class="btn-icon" data-action="toggle-theme" aria-label="Toggle theme">🌓</button>
+          <button class="btn-icon" id="theme-btn" data-action="toggle-theme" aria-label="Toggle theme">
+            🌙
+          </button>
         </div>
       </div>
     </nav>
@@ -70,55 +72,56 @@
     <div id="filters-overlay">
       <div class="bottom-sheet">
         <div class="sheet-handle"></div>
-        <h2 class="sheet-title">Preferences</h2>
+        <h2 class="sheet-title" id="sheet-title">Preferences</h2>
 
-        <div class="feed-type-toggle">
-          <button id="btn-type-news" class="feed-type-btn active" data-action="feed-news">
-            General
-          </button>
-          <button id="btn-type-official" class="feed-type-btn" data-action="feed-official">
-            Official
-          </button>
+        <!-- Region comes first: it decides which feed everything else filters. -->
+        <div class="filter-group">
+          <label class="filter-label" id="label-region">Region</label>
+          <div class="chip-row" id="country-options"></div>
         </div>
 
         <div class="filter-group">
-          <label class="filter-label" for="search-q">Search</label>
-          <input type="text" id="search-q" class="search-input" placeholder="Keywords..." />
+          <label class="filter-label" for="search-q" id="label-search">Search</label>
+          <input type="text" id="search-q" class="search-input" placeholder="Search" />
         </div>
 
         <div class="filter-group">
-          <label class="filter-label" for="sel-src" id="label-src">Source Portal</label>
-          <select id="sel-src" class="filter-select">
-            <option value="">All Portals</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <label class="filter-label" for="sel-cat" id="label-cat">Category</label>
+          <label class="filter-label" for="sel-cat" id="label-cat">Topic</label>
           <select id="sel-cat" class="filter-select">
-            <option value="">All Categories</option>
+            <option value="">All Topics</option>
           </select>
         </div>
 
         <div class="filter-group">
-          <label class="filter-label" for="sel-audience" id="label-audience">Who are you?</label>
-          <select id="sel-audience" class="filter-select">
-            <option value="">Who are you?</option>
+          <label class="filter-label" for="sel-src" id="label-src">Source</label>
+          <select id="sel-src" class="filter-select">
+            <option value="">All Sources</option>
           </select>
         </div>
 
         <div class="filter-group">
-          <button id="btn-high-impact" class="btn-toggle" data-action="toggle-high-impact">
-            <span id="label-high-impact">High Impact Only</span> 🚨
-          </button>
-        </div>
-
-        <div class="filter-group">
-          <label class="filter-label" for="filter-date">Filter by Date</label>
+          <label class="filter-label" for="filter-date" id="label-date">Date</label>
           <input type="date" id="filter-date" class="filter-date" />
         </div>
 
-        <button class="btn-action" data-action="close-filters">Done</button>
+        <div class="filter-group">
+          <button id="btn-top-stories" class="btn-toggle" data-action="toggle-top-stories">
+            <span id="label-top-stories">Top Stories Only</span> ⭐
+          </button>
+        </div>
+
+        <!-- Only shown for regions whose summaries are also written in Hindi. -->
+        <div class="filter-group setting-row" id="language-row" hidden>
+          <span class="filter-label" id="label-language">Language</span>
+          <button class="btn-chip" id="lang-btn" data-action="toggle-lang">हिन्दी</button>
+        </div>
+
+        <div class="sheet-actions">
+          <button class="btn-secondary" id="btn-reset" data-action="reset-filters">
+            Reset filters
+          </button>
+          <button class="btn-action" id="btn-done" data-action="close-filters">Done</button>
+        </div>
       </div>
     </div>
 

@@ -1,6 +1,6 @@
 /* Backend access: metadata, sources and the paginated feed. */
 
-import { API, PAGE_SIZE, CACHE_NAME, setAudiences, setCategories } from "./config.js";
+import { API, CACHE_NAME, PAGE_SIZE, setCategories, setCountries } from "./config.js";
 
 /** Thrown for non-2xx responses so callers can react to the status code. */
 export class ApiError extends Error {
@@ -18,18 +18,17 @@ export class ApiError extends Error {
  * cache key stays stable for the common unfiltered case.
  */
 export function buildFeedUrl(page, filters) {
-  const { query, feedType, sourceId, category, audience, date, highImpactOnly } = filters;
+  const { query, country, sourceId, category, date, topStoriesOnly } = filters;
   const params = new URLSearchParams({
     page: String(page),
     page_size: String(PAGE_SIZE),
-    feed_type: feedType,
+    country,
   });
   if (query) params.set("q", query);
   if (sourceId) params.set("source_id", sourceId);
   if (category) params.set("category", category);
-  if (audience) params.set("audience", audience);
   if (date) params.set("date", date);
-  if (highImpactOnly) params.set("impact_level", "high_only");
+  if (topStoriesOnly) params.set("impact_level", "high_only");
 
   const path = query ? "feed/search" : "feed/latest";
   return `${API}/${path}?${params.toString()}`;
@@ -49,16 +48,18 @@ export async function fetchFeedPage(url) {
 export async function fetchMetadata() {
   try {
     const data = await getJson(`${API}/config/metadata`);
-    setAudiences(data.audiences);
     setCategories(data.categories);
+    setCountries(data.countries);
   } catch {
     /* Bundled defaults in config.js remain in effect. */
   }
 }
 
-export async function fetchSources() {
+/** Outlets carried for a scope, so the source filter only offers real ones. */
+export async function fetchSources(country) {
   try {
-    return await getJson(`${API}/config/sources`);
+    const query = country ? `?country=${encodeURIComponent(country)}` : "";
+    return await getJson(`${API}/config/sources${query}`);
   } catch {
     return [];
   }

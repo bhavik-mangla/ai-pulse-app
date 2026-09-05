@@ -70,7 +70,9 @@ export function renderCard(item, lang) {
 
   const category = CATEGORIES.find((c) => c.id === item.category);
   const isGeneral = !category || category.id === "other";
-  const categoryLabel = category ? category[lang] : strings.general;
+  const categoryLabel = category
+    ? `${category.emoji ? `${category.emoji} ` : ""}${category[lang] || category.en}`
+    : strings.general;
 
   const sourceLabel = String(item.source_name || item.source_id || "").toUpperCase();
   const link = safeUrl(item.fetch_url) || safeUrl(item.source_url);
