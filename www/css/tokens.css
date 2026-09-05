@@ -1,0 +1,82 @@
+/* Design tokens, theme palettes and global reset. */
+
+:root {
+  color-scheme: dark;
+  --bg: #05070a;
+  --card-bg: #0f1219;
+  --card-hover: #161b22;
+  --text: #ffffff;
+  --text-muted: #94a3b8;
+  --primary: #38bdf8;
+  --primary-glow: rgba(56, 189, 248, 0.4);
+  --accent: #fbbf24;
+  --border: rgba(255, 255, 255, 0.1);
+  --success: #00f281;
+  --error: #ff4d4d;
+  --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  --shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  --calendar-filter: invert(100%) brightness(1.5);
+
+  /* Standardized Spacing & Sizes */
+  --space-xs: 8px;
+  --space-sm: 14px;
+  --space-md: 24px;
+  --space-lg: 36px;
+  --touch-target: 48px;
+  --safe-top: env(safe-area-inset-top, 20px);
+  --nav-height: calc(var(--safe-top) + 56px);
+
+  /* Fluid Typography */
+  --font-size-h1: clamp(1.4rem, 1.1rem + 1.5vw, 2.2rem);
+  --font-size-h2: clamp(1.2rem, 1rem + 1vw, 1.8rem);
+  --font-size-logo: clamp(1.2rem, 1.1rem + 0.5vw, 1.5rem);
+  --font-size-base: clamp(0.9rem, 0.85rem + 0.25vw, 1.1rem);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #fdfdfd;
+  --card-bg: #ffffff;
+  --card-hover: #f8fafc;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --primary: #0284c7;
+  --primary-glow: rgba(2, 132, 199, 0.2);
+  --accent: #d97706;
+  --border: rgba(0, 0, 0, 0.05);
+  --shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+  --calendar-filter: none;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  background-color: var(--bg);
+  scrollbar-width: none;
+}
+
+body {
+  font-family: "Inter", "Noto Sans Devanagari", system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  line-height: 1.6;
+  font-size: var(--font-size-base);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Respect users who ask for less motion; the feed is animation-heavy. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
