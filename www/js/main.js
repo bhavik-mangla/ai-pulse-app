@@ -31,6 +31,7 @@ import {
   showToast,
   changeDigestTime,
   syncDigestControls,
+  syncModeBanner,
   syncSavedCount,
   toggleDigest,
   toggleFilters,
@@ -42,6 +43,30 @@ import {
 function refresh() {
   haptic("impactLight");
   state.showingSaved = false;
+  state.mode = "unread";
+  syncModeBanner();
+  loadFeed({ refresh: true });
+}
+
+/**
+ * Keep going after catching up.
+ *
+ * Being finished for the day should not mean the app has nothing left to
+ * offer, so this drops the already-read filter and pages back through
+ * everything for the current topic, newest first.
+ */
+function readEarlier() {
+  state.mode = "earlier";
+  state.showingSaved = false;
+  syncModeBanner();
+  haptic("impactLight");
+  loadFeed({ refresh: true });
+}
+
+function backToLatest() {
+  state.mode = "unread";
+  syncModeBanner();
+  haptic("impactLight");
   loadFeed({ refresh: true });
 }
 
@@ -157,6 +182,8 @@ const ACTIONS = {
   "toggle-digest": () => toggleDigest(showToast),
   "show-feed": showFeed,
   "refresh-feed": refresh,
+  "read-earlier": readEarlier,
+  "back-to-latest": backToLatest,
   "close-card": (el) => {
     const card = el.closest(".feed-item");
     if (card) flipCard(card);
@@ -191,7 +218,13 @@ function bindEvents() {
   const container = $("feed-container");
   initPullToRefresh(container, $("pull-indicator"), refresh);
   initTapToFlip(container, flipCard);
-  initTopicSwipe(container, () => loadFeed({ refresh: true }));
+  /* Swiping to a topic must behave exactly like tapping its tab. */
+  initTopicSwipe(container, () => {
+    state.mode = "unread";
+    state.showingSaved = false;
+    syncModeBanner();
+    loadFeed({ refresh: true });
+  });
 
   /* Headline sizing depends on viewport height, so re-fit when it changes. */
   let resizeTimer = null;

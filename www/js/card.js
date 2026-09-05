@@ -82,7 +82,7 @@ export function renderCard(item, lang) {
 
   const linkHtml = link
     ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer"
-          class="btn-action" data-action="open-source">${escapeHtml(strings.source)}</a>`
+          class="btn-action">${escapeHtml(strings.source)}</a>`
     : "";
 
   return `

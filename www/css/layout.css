@@ -286,3 +286,34 @@ nav {
 .caught-up-action {
   margin-top: var(--space-lg);
 }
+
+/* --- Reading-mode banner --- */
+
+.mode-banner {
+  position: fixed;
+  top: var(--nav-height);
+  left: 0;
+  right: 0;
+  z-index: 1900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 6px var(--space-md);
+  background: var(--card-hover);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.banner-action {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 2px 4px;
+}

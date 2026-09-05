@@ -132,6 +132,9 @@ export const I18N = {
     done: "Done",
     reset: "Reset filters",
     saved: "Saved stories",
+    endOfArchive: "That is everything we have for this topic.",
+    readingEarlier: "Earlier stories",
+    backToLatest: "Back to latest",
     dailyReminder: "Daily reminder",
   },
 };

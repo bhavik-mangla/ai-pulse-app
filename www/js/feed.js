@@ -139,7 +139,10 @@ function renderCaughtUp(container, { read, streak }) {
         <h2 class="caught-up-title">You are all caught up</h2>
         <p class="caught-up-sub">${escapeHtml(count(read, "story", "stories"))} read today</p>
         ${streakLine}
-        <button class="btn-action caught-up-action" data-action="refresh-feed">
+        <button class="btn-action caught-up-action" data-action="read-earlier">
+          Keep reading earlier stories
+        </button>
+        <button class="btn-secondary" data-action="refresh-feed">
           Check for new stories
         </button>
       </div>
@@ -227,7 +230,9 @@ export async function loadFeed({ refresh = false, append = false } = {}) {
       const effectiveSize = Number(data.page_size) || PAGE_SIZE;
       if (items.length < effectiveSize) state.endReached = true;
 
-      collected.push(...items.filter((item) => !SeenManager.has(item.id)));
+      collected.push(
+        ...(state.mode === "earlier" ? items : items.filter((item) => !SeenManager.has(item.id)))
+      );
 
       if (collected.length >= MIN_UNSEEN_BATCH || state.endReached || filters.query) break;
 
@@ -238,7 +243,11 @@ export async function loadFeed({ refresh = false, append = false } = {}) {
     const fresh = collected.filter((item) => !state.renderedIds.has(String(item.id)));
 
     if (fresh.length) {
-      if (isInitial && !filters.query) {
+      /*
+       * Only the unread feed is cached. Caching the archive under the same key
+       * would make the next cold start open on stories already read.
+       */
+      if (isInitial && !filters.query && state.mode === "unread") {
         await writeCachedPage(buildFeedUrl(1, filters), {
           items: fresh.slice(0, PAGE_SIZE),
           total: fresh.length,
@@ -261,6 +270,8 @@ export async function loadFeed({ refresh = false, append = false } = {}) {
       );
       if (hasFilters) {
         renderMessage(container, strings.noRecords);
+      } else if (state.mode === "earlier") {
+        renderMessage(container, strings.endOfArchive);
       } else {
         const streak = getStreak();
         renderCaughtUp(container, { read: streak.todayCount, streak });
@@ -274,7 +285,9 @@ export async function loadFeed({ refresh = false, append = false } = {}) {
 /** Paint the cached first page immediately so the app is never blank. */
 async function renderFromCache(filters) {
   const cached = await readCachedPage(buildFeedUrl(1, filters));
-  const items = (cached?.items || []).filter((item) => !SeenManager.has(item.id));
+  const items = (cached?.items || []).filter(
+    (item) => state.mode === "earlier" || !SeenManager.has(item.id)
+  );
   if (!items.length) return;
   items.forEach((item) => state.renderedIds.add(String(item.id)));
   renderFeed(items, { append: false });

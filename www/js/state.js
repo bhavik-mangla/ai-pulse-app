@@ -38,6 +38,12 @@ export const state = {
   topic: "__for_you__",
   /* True while the saved-stories list is showing instead of the feed. */
   showingSaved: false,
+  /*
+   * "unread" hides stories already read; "earlier" shows everything, newest
+   * first. Catching up should be the start of a second helping, not a dead
+   * end, so reaching the end of the unread feed offers to keep going.
+   */
+  mode: "unread",
 };
 
 /** Persist the chosen interests. */

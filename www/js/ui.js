@@ -172,6 +172,27 @@ export function syncSavedCount() {
   }
 }
 
+/* --- Reading mode --- */
+
+/**
+ * Show a banner while reading earlier stories.
+ *
+ * Without it, a reader who has scrolled into the archive has no way to tell
+ * that these are stories they may already have read, or how to get back.
+ */
+export function syncModeBanner() {
+  const banner = $("mode-banner");
+  if (!banner) return;
+  const earlier = state.mode === "earlier";
+  banner.hidden = !earlier;
+  if (earlier) {
+    banner.innerHTML =
+      `<span>${escapeHtml(I18N.en.readingEarlier)}</span>` +
+      `<button class="banner-action" data-action="back-to-latest">` +
+      `${escapeHtml(I18N.en.backToLatest)}</button>`;
+  }
+}
+
 /* --- Daily reminder --- */
 
 export function syncDigestControls() {
