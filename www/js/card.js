@@ -94,7 +94,7 @@ export function renderCard(item, lang) {
             <div class="card-image-bg${isLogo ? " logo" : ""}"
                  style="background-image:url('${safeImage}')"></div>
             <div class="card-source-tag">
-              <span class="source-name-mini">${escapeHtml(sourceLabel)}</span>
+              <span>${escapeHtml(sourceLabel)}</span>
             </div>
           </div>
           <div class="card-content-front">
