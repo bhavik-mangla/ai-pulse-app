@@ -28,12 +28,9 @@ export function parseSummary(summary, lang = "en") {
   }
 
   if (data && typeof data === "object") {
-    const isHindi = lang === "hi";
-    const quickTake = isHindi ? data.quick_take_hindi || data.quick_take : data.quick_take;
-    const details = isHindi ? data.key_details_hindi || data.key_details : data.key_details;
     return {
-      oneLiner: quickTake || "",
-      bullets: Array.isArray(details) ? details : [],
+      oneLiner: data.quick_take || "",
+      bullets: Array.isArray(data.key_details) ? data.key_details : [],
     };
   }
 

@@ -1,16 +1,9 @@
 /* Chrome: theme, language, region picker, preferences sheet and toasts. */
 
-import {
-  CATEGORIES,
-  COUNTRIES,
-  I18N,
-  STORAGE_KEYS,
-  countryByCode,
-  offersHindi,
-} from "./config.js";
+import { CATEGORIES, COUNTRIES, I18N, STORAGE_KEYS, countryByCode } from "./config.js";
 import { $, escapeHtml } from "./dom.js";
 import { haptic } from "./haptics.js";
-import { state, writeStored } from "./state.js";
+import { saveInterests, state, writeStored } from "./state.js";
 import { formatHeaderDate } from "./time.js";
 
 let toastTimer = null;
@@ -67,17 +60,7 @@ function syncCountryChip() {
   }
 }
 
-/*
- * Hindi is only generated for scopes that are offered it, so the toggle is
- * hidden elsewhere rather than switching the UI into a language the article
- * summaries are not available in.
- */
-export function syncLanguageAvailability() {
-  const row = $("language-row");
-  if (row) row.hidden = !offersHindi(state.country);
-}
-
-/* --- Language --- */
+/* --- Interests --- */
 
 function fillSelect(id, placeholder, options) {
   const select = $(id);
@@ -91,23 +74,35 @@ function fillSelect(id, placeholder, options) {
   select.value = previous;
 }
 
-export function setLang(lang) {
-  state.lang = lang;
-  writeStored(STORAGE_KEYS.lang, lang);
-  const strings = I18N[lang];
+/** Render the interest chips and reflect which are selected. */
+export function renderInterests() {
+  const wrap = $("interest-options");
+  if (!wrap) return;
+  wrap.innerHTML = CATEGORIES.filter((c) => c.id !== "other")
+    .map(
+      (c) => `
+      <button class="chip${state.interests.has(c.id) ? " active" : ""}"
+              data-action="toggle-interest" data-interest="${escapeHtml(c.id)}">
+        <span class="chip-flag">${escapeHtml(c.emoji || "")}</span>
+        ${escapeHtml(c.en)}
+      </button>`
+    )
+    .join("");
+}
 
-  const langBtn = $("lang-btn");
-  if (langBtn) langBtn.textContent = lang === "en" ? "हिन्दी" : "English";
+/** Add or remove a topic from the reader's interests. */
+export function toggleInterest(id) {
+  if (state.interests.has(id)) state.interests.delete(id);
+  else state.interests.add(id);
+  saveInterests();
+  renderInterests();
+  haptic("impactLight");
+}
 
-  fillSelect(
-    "sel-cat",
-    strings.allCats,
-    CATEGORIES.map((c) => ({
-      value: c.id,
-      label: `${c.emoji ? `${c.emoji} ` : ""}${c[lang] || c.en}`,
-    }))
-  );
+export function applyStrings() {
+  const strings = I18N.en;
 
+  renderInterests();
   applyStaticLabels(strings);
   renderSourceFilter();
 }
@@ -117,11 +112,11 @@ function applyStaticLabels(strings) {
   const labels = {
     "sheet-title": strings.preferences,
     "label-region": strings.region,
-    "label-cat": strings.topic,
+    "label-interests": strings.interests,
+    "hint-interests": strings.interestsHint,
     "label-src": strings.sourceLabel,
     "label-search": strings.search,
     "label-date": strings.date,
-    "label-language": strings.language,
     "label-top-stories": strings.topStoriesOnly,
     "btn-done": strings.done,
     "btn-reset": strings.reset,

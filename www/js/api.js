@@ -18,7 +18,7 @@ export class ApiError extends Error {
  * cache key stays stable for the common unfiltered case.
  */
 export function buildFeedUrl(page, filters) {
-  const { query, country, sourceId, category, date, topStoriesOnly } = filters;
+  const { query, country, sourceId, categories, date, topStoriesOnly } = filters;
   const params = new URLSearchParams({
     page: String(page),
     page_size: String(PAGE_SIZE),
@@ -26,7 +26,7 @@ export function buildFeedUrl(page, filters) {
   });
   if (query) params.set("q", query);
   if (sourceId) params.set("source_id", sourceId);
-  if (category) params.set("category", category);
+  if (categories?.length) params.set("categories", categories.join(","));
   if (date) params.set("date", date);
   if (topStoriesOnly) params.set("impact_level", "high_only");
 

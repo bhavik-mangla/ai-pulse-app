@@ -29,7 +29,7 @@ export function currentFilters() {
     query: valueOf("search-q"),
     country: state.country,
     sourceId: valueOf("sel-src"),
-    category: valueOf("sel-cat"),
+    categories: [...state.interests],
     date: valueOf("filter-date"),
     topStoriesOnly: state.topStoriesOnly,
   };
@@ -200,7 +200,7 @@ export async function loadFeed({ refresh = false, append = false } = {}) {
       state.page = lastFetchedPage + 1;
     } else if (isInitial && state.renderedIds.size === 0 && container) {
       const hasFilters = Boolean(
-        filters.query || filters.category || filters.sourceId ||
+        filters.query || filters.categories.length || filters.sourceId ||
         filters.date || filters.topStoriesOnly
       );
       renderMessage(

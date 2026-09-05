@@ -8,8 +8,8 @@ export const CACHE_NAME = "aipulse-cache";
 
 export const STORAGE_KEYS = {
   theme: "gov_theme",
-  lang: "gov_lang",
   country: "feed_country",
+  interests: "feed_interests",
 };
 
 /*
@@ -24,9 +24,6 @@ export let COUNTRIES = [
 ];
 
 export const DEFAULT_COUNTRY = "world";
-
-/* Scopes offered a Hindi translation; mirrors what the backend generates. */
-export const HINDI_COUNTRIES = new Set(["in"]);
 
 /*
  * File extension of the logo bundled under assets/logos/ for a source.
@@ -49,17 +46,17 @@ export const LOGO_EXT = {
  * backend produces.
  */
 export let CATEGORIES = [
-  { id: "world", en: "World", hi: "विश्व", emoji: "🌍" },
-  { id: "business", en: "Business", hi: "व्यापार", emoji: "📈" },
-  { id: "politics", en: "Politics", hi: "राजनीति", emoji: "🏛" },
-  { id: "technology", en: "Technology", hi: "प्रौद्योगिकी", emoji: "💻" },
-  { id: "science", en: "Science", hi: "विज्ञान", emoji: "🔬" },
-  { id: "health", en: "Health", hi: "स्वास्थ्य", emoji: "🏥" },
-  { id: "sports", en: "Sports", hi: "खेल", emoji: "⚽" },
-  { id: "entertainment", en: "Entertainment", hi: "मनोरंजन", emoji: "🎬" },
-  { id: "environment", en: "Environment", hi: "पर्यावरण", emoji: "🌱" },
-  { id: "education", en: "Education", hi: "शिक्षा", emoji: "🎓" },
-  { id: "other", en: "Other", hi: "अन्य", emoji: "🔗" },
+  { id: "world", en: "World", emoji: "🌍" },
+  { id: "business", en: "Business", emoji: "📈" },
+  { id: "politics", en: "Politics", emoji: "🏛" },
+  { id: "technology", en: "Technology", emoji: "💻" },
+  { id: "science", en: "Science", emoji: "🔬" },
+  { id: "health", en: "Health", emoji: "🏥" },
+  { id: "sports", en: "Sports", emoji: "⚽" },
+  { id: "entertainment", en: "Entertainment", emoji: "🎬" },
+  { id: "environment", en: "Environment", emoji: "🌱" },
+  { id: "education", en: "Education", emoji: "🎓" },
+  { id: "other", en: "Other", emoji: "🔗" },
 ];
 
 export function setCategories(next) {
@@ -72,10 +69,6 @@ export function setCountries(next) {
 
 export function countryByCode(code) {
   return COUNTRIES.find((c) => c.code === code) || COUNTRIES[0];
-}
-
-export function offersHindi(code) {
-  return HINDI_COUNTRIES.has(code);
 }
 
 /**
@@ -97,6 +90,20 @@ export function detectCountry() {
   return DEFAULT_COUNTRY;
 }
 
+/*
+ * UI strings.
+ *
+ * English only. Hindi was removed and preserved on the
+ * archive/hindi-localisation branch; translating properly means handling
+ * several languages rather than special-casing one, and every article summary
+ * would have to be generated in each.
+ *
+ * The table is kept so adding a language is a matter of adding a key here and
+ * a matching entry in the backend's CATEGORY_NAMES, with nothing else in the
+ * app being language-specific.
+ */
+export const DEFAULT_LANGUAGE = "en";
+
 export const I18N = {
   en: {
     details: "Breakdown",
@@ -115,39 +122,19 @@ export const I18N = {
     rateLimited: "Too many requests. Please wait a moment.",
     preferences: "Preferences",
     region: "Region",
+    interests: "Interests",
+    interestsHint: "Pick the topics you want to see. Leave empty for everything.",
     topic: "Topic",
     sourceLabel: "Source",
     search: "Search",
     date: "Date",
-    language: "Language",
     theme: "Theme",
     done: "Done",
     reset: "Reset filters",
   },
-  hi: {
-    details: "सारांश",
-    source: "पूरी खबर पढ़ें",
-    back: "बंद करें",
-    noSummary: "सारांश उपलब्ध नहीं है।",
-    allCats: "सभी विषय",
-    allSources: "सभी स्रोत",
-    topStoriesOnly: "केवल प्रमुख खबरें",
-    general: "सामान्य",
-    caughtUp: "आप पूरी तरह अपडेट हैं!",
-    noNewItems: "अभी कोई नई खबर नहीं। रिफ्रेश करने के लिए नीचे खींचें।",
-    noRecords: "इन फ़िल्टरों से कुछ मेल नहीं खाता।",
-    networkError: "नेटवर्क त्रुटि। अपना कनेक्शन जांचें।",
-    serverError: "सर्वर त्रुटि। कृपया बाद में पुनः प्रयास करें।",
-    rateLimited: "बहुत अधिक अनुरोध। कृपया थोड़ा प्रतीक्षा करें।",
-    preferences: "प्राथमिकताएं",
-    region: "क्षेत्र",
-    topic: "विषय",
-    search: "खोजें",
-    date: "तारीख",
-    sourceLabel: "स्रोत",
-    language: "भाषा",
-    theme: "थीम",
-    done: "पूर्ण",
-    reset: "फ़िल्टर रीसेट करें",
-  },
 };
+
+/** Look up a UI string, falling back to English. */
+export function t(key, lang = DEFAULT_LANGUAGE) {
+  return (I18N[lang] || I18N[DEFAULT_LANGUAGE])[key] ?? key;
+}

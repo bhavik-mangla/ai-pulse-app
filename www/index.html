@@ -29,7 +29,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Noto+Sans+Devanagari:wght@400;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap"
       rel="stylesheet"
     />
 
@@ -85,11 +85,17 @@
           <input type="text" id="search-q" class="search-input" placeholder="Search" />
         </div>
 
+        <!--
+          Interests replace the old "Who are you?" filter, which asked for a
+          profession. What a reader wants from a news app is topics, not a job
+          title, and several at once rather than one.
+        -->
         <div class="filter-group">
-          <label class="filter-label" for="sel-cat" id="label-cat">Topic</label>
-          <select id="sel-cat" class="filter-select">
-            <option value="">All Topics</option>
-          </select>
+          <label class="filter-label" id="label-interests">Interests</label>
+          <p class="filter-hint" id="hint-interests">
+            Pick the topics you want to see. Leave empty for everything.
+          </p>
+          <div class="chip-row chip-wrap" id="interest-options"></div>
         </div>
 
         <div class="filter-group">
@@ -108,12 +114,6 @@
           <button id="btn-top-stories" class="btn-toggle" data-action="toggle-top-stories">
             <span id="label-top-stories">Top Stories Only</span> ⭐
           </button>
-        </div>
-
-        <!-- Only shown for regions whose summaries are also written in Hindi. -->
-        <div class="filter-group setting-row" id="language-row" hidden>
-          <span class="filter-label" id="label-language">Language</span>
-          <button class="btn-chip" id="lang-btn" data-action="toggle-lang">हिन्दी</button>
         </div>
 
         <div class="sheet-actions">

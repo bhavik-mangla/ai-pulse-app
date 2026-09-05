@@ -20,7 +20,7 @@ export function writeStored(key, value) {
 }
 
 export const state = {
-  lang: readStored(STORAGE_KEYS.lang, "en"),
+  lang: "en",
   /*
    * Feed scope. Seeded from the device region on first run so a reader lands
    * on something relevant without being asked, and remembered thereafter.
@@ -32,7 +32,14 @@ export const state = {
   topStoriesOnly: false,
   sources: [],
   renderedIds: new Set(),
+  /* Topics the reader chose; empty means show everything. */
+  interests: new Set(readStored(STORAGE_KEYS.interests, "").split(",").filter(Boolean)),
 };
+
+/** Persist the chosen interests. */
+export function saveInterests() {
+  writeStored(STORAGE_KEYS.interests, [...state.interests].join(","));
+}
 
 export function resetPagination() {
   state.page = 1;

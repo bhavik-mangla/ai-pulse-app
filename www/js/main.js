@@ -2,21 +2,22 @@
 
 import { fetchMetadata, fetchSources } from "./api.js";
 import { refitAll } from "./autofit.js";
-import { STORAGE_KEYS, offersHindi } from "./config.js";
+import { STORAGE_KEYS } from "./config.js";
 import { $ } from "./dom.js";
 import { flipCard, initObservers, loadFeed, setToastHandler } from "./feed.js";
 import { initPullToRefresh, initTapToFlip } from "./gestures.js";
 import { haptic } from "./haptics.js";
 import { SeenManager } from "./seen.js";
-import { state, writeStored } from "./state.js";
+import { saveInterests, state, writeStored } from "./state.js";
 import {
+  applyStrings,
   renderCountryOptions,
   renderSourceFilter,
-  setLang,
   setTheme,
   showToast,
-  syncLanguageAvailability,
   toggleFilters,
+  renderInterests,
+  toggleInterest,
   toggleTheme,
   updateHeaderDate,
 } from "./ui.js";
@@ -31,10 +32,6 @@ async function setCountry(code) {
   if (!code || code === state.country) return;
   state.country = code;
   writeStored(STORAGE_KEYS.country, code);
-
-  /* Hindi only exists for scopes that generate it. */
-  if (!offersHindi(code) && state.lang !== "en") setLang("en");
-  syncLanguageAvailability();
 
   /* A source filter from the previous scope would match nothing here. */
   const sourceSelect = $("sel-src");
@@ -52,17 +49,15 @@ function toggleTopStories() {
   refresh();
 }
 
-function toggleLang() {
-  setLang(state.lang === "en" ? "hi" : "en");
-  refresh();
-}
-
 /** Clear every filter without touching the chosen scope. */
 function resetFilters() {
-  ["search-q", "sel-cat", "sel-src", "filter-date"].forEach((id) => {
+  ["search-q", "sel-src", "filter-date"].forEach((id) => {
     const el = $(id);
     if (el) el.value = "";
   });
+  state.interests.clear();
+  saveInterests();
+  renderInterests();
   state.topStoriesOnly = false;
   $("btn-top-stories")?.classList.remove("active");
   haptic("impactLight");
@@ -76,13 +71,16 @@ function resetFilters() {
  * module scope is not global.
  */
 const ACTIONS = {
-  "toggle-lang": toggleLang,
   "toggle-theme": toggleTheme,
   "open-filters": () => toggleFilters(true),
   "close-filters": () => toggleFilters(false),
   "toggle-top-stories": toggleTopStories,
   "reset-filters": resetFilters,
   "set-country": (el) => setCountry(el.dataset.country),
+  "toggle-interest": (el) => {
+    toggleInterest(el.dataset.interest);
+    refresh();
+  },
   "close-card": (el) => {
     const card = el.closest(".feed-item");
     if (card) flipCard(card);
@@ -104,7 +102,7 @@ function bindEvents() {
     if (event.target.id === "filters-overlay") toggleFilters(false);
   });
 
-  ["sel-src", "sel-cat", "filter-date"].forEach((id) => {
+  ["sel-src", "filter-date"].forEach((id) => {
     $(id)?.addEventListener("change", refresh);
   });
 
@@ -140,8 +138,7 @@ async function init() {
   state.sources = await fetchSources(state.country);
 
   renderCountryOptions();
-  syncLanguageAvailability();
-  setLang(state.lang);
+  applyStrings();
   loadFeed();
 }
 
