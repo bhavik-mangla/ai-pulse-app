@@ -23,6 +23,21 @@ const NOTIFICATION_ID = 1;
 const TITLE = "Your stories are ready";
 const BODY = "A few minutes, and you are caught up.";
 
+/*
+ * The reminder carries a real headline when we have one worth carrying.
+ *
+ * On-device models cannot run in the background and background fetch is
+ * throttled hard on iOS, so the content is chosen when the app is open and
+ * scheduled ahead. It can therefore name a story from earlier in the day
+ * rather than this minute's, which is a fair trade for a notification that
+ * says something instead of nothing.
+ */
+let pendingHeadline = null;
+
+export function setDigestHeadline(headline) {
+  pendingHeadline = headline || null;
+}
+
 export function getSettings() {
   return {
     enabled: readStored(STORAGE_KEY_ENABLED, "false") === "true",
@@ -53,8 +68,8 @@ async function scheduleNative(plugin, time) {
     notifications: [
       {
         id: NOTIFICATION_ID,
-        title: TITLE,
-        body: BODY,
+        title: pendingHeadline ? "Worth knowing today" : TITLE,
+        body: pendingHeadline || BODY,
         schedule: { on: parseTime(time), repeats: true, allowWhileIdle: true },
       },
     ],

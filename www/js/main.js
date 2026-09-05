@@ -1,6 +1,6 @@
 /* Entry point: bootstraps state, binds events and loads the first feed. */
 
-import { fetchMetadata, fetchSources } from "./api.js";
+import { fetchDigest, fetchMetadata, fetchSources } from "./api.js";
 import { refitAll } from "./autofit.js";
 import { listBookmarks, loadBookmarks, toggleBookmark } from "./bookmarks.js";
 import { STORAGE_KEYS } from "./config.js";
@@ -16,7 +16,7 @@ import {
 } from "./feed.js";
 import { initPullToRefresh, initTapToFlip } from "./gestures.js";
 import { haptic } from "./haptics.js";
-import { restoreDigest } from "./notify.js";
+import { getSettings as digestSettings, restoreDigest, setDigestHeadline } from "./notify.js";
 import { SeenManager } from "./seen.js";
 import { saveInterests, state, writeStored } from "./state.js";
 import { loadStreak } from "./streak.js";
@@ -234,6 +234,18 @@ function bindEvents() {
   });
 }
 
+/**
+ * Pick the headline the next reminder will carry.
+ *
+ * Only worth a request when reminders are actually on, and an empty digest
+ * leaves the generic wording in place rather than inventing urgency.
+ */
+async function primeDigestHeadline() {
+  if (!digestSettings().enabled) return;
+  const items = await fetchDigest(state.country, [...state.interests], 1);
+  setDigestHeadline(items[0]?.title || null);
+}
+
 async function init() {
   setToastHandler(showToast);
   setStreakHandler((streak) => {
@@ -257,6 +269,7 @@ async function init() {
   applyStrings();
   syncSavedCount();
   syncDigestControls();
+  await primeDigestHeadline();
   restoreDigest();
 
   loadFeed();

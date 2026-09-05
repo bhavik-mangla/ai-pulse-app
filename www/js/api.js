@@ -65,6 +65,23 @@ export async function fetchSources(country) {
   }
 }
 
+/**
+ * The few stories that justify a notification, for this reader's interests.
+ *
+ * Returns an empty list rather than padding: a reminder naming a story people
+ * actually want is worth far more than a daily "some news happened".
+ */
+export async function fetchDigest(country, categories, limit = 3) {
+  const params = new URLSearchParams({ country, limit: String(limit) });
+  if (categories?.length) params.set("categories", categories.join(","));
+  try {
+    const data = await getJson(`${API}/feed/digest?${params.toString()}`);
+    return data.items || [];
+  } catch {
+    return [];
+  }
+}
+
 /* --- Offline cache for the first page --- */
 
 async function openCache() {
