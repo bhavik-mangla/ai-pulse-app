@@ -1,0 +1,294 @@
+/* News card: flip container, front face and back face. */
+
+.card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-height: 80dvh;
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-style: preserve-3d;
+  border-radius: 36px;
+}
+
+.feed-item.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+
+.card-front,
+.card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 36px;
+  overflow: hidden;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  /* Force hardware acceleration and layer separation for iOS */
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+}
+
+/*
+ * The front face is a flex column so the image and the text share the card
+ * exactly. The previous fixed 33% + 69% split totalled 102%, which overflowed
+ * the card, clipped the meta row and squeezed the headline into a scroller.
+ */
+.card-front {
+  z-index: 2;
+  transform: rotateY(0deg);
+  display: flex;
+  flex-direction: column;
+}
+
+.card-back {
+  z-index: 1;
+  transform: rotateY(180deg);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Correct here: a flipped card should never scroll the feed behind it. */
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+.feed-item.flipped .card-back {
+  z-index: 10;
+}
+
+.feed-item.flipped .card-front {
+  z-index: 1;
+}
+
+.card-image-wrap {
+  position: relative;
+  flex: 0 0 32%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--border);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Solid backdrop for transparent images (SVG/PNG logos). */
+.card-image-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--card-bg);
+  z-index: 1;
+}
+
+.card-image-bg {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: transform 1.5s ease-out;
+  background-color: transparent;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.feed-item.active .card-image-bg:not(.logo) {
+  transform: scale(1.1);
+}
+
+.card-image-bg.logo {
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  transform: none;
+  background-color: var(--card-bg);
+}
+
+/* min-height:0 lets this flex child actually shrink instead of overflowing. */
+.card-content-front {
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--card-bg);
+}
+
+.card-category {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 3px 8px;
+  background: var(--primary);
+  color: #000;
+  font-size: 0.55rem;
+  font-weight: 800;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+/*
+ * The headline is deliberately NOT a scroller.
+ *
+ * A nested scroll container inside a scroll-snap page traps the swipe on
+ * Android: Chrome latches the gesture to the inner scroller for its whole
+ * duration, so a long headline eats the swipe to the next story. Instead the
+ * text is auto-fitted (see js/autofit.js) and clamped with a fade if it still
+ * does not fit -- the full story is one tap away on the back of the card.
+ */
+.card-headline {
+  font-size: var(--font-size-h2);
+  font-weight: 800;
+  line-height: 1.5;
+  margin: 0 0 var(--space-sm) 0;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  word-wrap: break-word;
+  white-space: normal;
+}
+
+/* Fade the last line when the text had to be clamped. */
+.card-headline.is-clamped::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2.2em;
+  background: linear-gradient(to bottom, transparent, var(--card-bg) 85%);
+  pointer-events: none;
+}
+
+.card-meta {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.card-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: var(--space-xs);
+}
+
+.card-meta-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.card-meta-hint {
+  font-size: 0.7rem;
+  color: var(--primary);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.card-source-tag {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 3;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 5px 10px;
+  border-radius: 6px;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.feed-item.high-impact .card-inner {
+  border: 2px solid var(--error);
+  box-shadow: 0 0 20px rgba(255, 77, 77, 0.3);
+}
+
+/* Skeleton */
+.skeleton .card-image-wrap {
+  background: var(--border);
+  opacity: 0.5;
+}
+
+.skeleton .card-content-front {
+  background: var(--card-bg);
+}
+
+.skeleton .card-headline {
+  height: 1.5rem;
+  background: var(--border);
+  border-radius: 4px;
+  width: 80%;
+  margin-bottom: 8px;
+}
+
+.skeleton .card-category {
+  width: 60px;
+  height: 1rem;
+  background: var(--border);
+  border-radius: 4px;
+}
+
+/* Back face */
+.card-back-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin-bottom: 20px;
+  color: var(--primary);
+  line-height: 1.3;
+}
+
+.card-back-bullets {
+  margin: 0 0 24px 0;
+  padding: 0;
+  list-style: none;
+  width: 100%;
+}
+
+.card-back-bullets li {
+  margin-bottom: 14px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  position: relative;
+  padding-left: 20px;
+  color: var(--text);
+}
+
+.card-back-bullets li::before {
+  content: "\2022";
+  color: var(--primary);
+  position: absolute;
+  left: 0;
+  font-size: 1.1rem;
+  top: -1px;
+}
+
+.card-back-actions {
+  margin-top: auto;
+}

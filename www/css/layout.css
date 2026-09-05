@@ -1,0 +1,167 @@
+/* App chrome: nav bar, feed viewport and snap items. */
+
+nav {
+  background: var(--bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  position: fixed;
+  top: 0;
+  z-index: 2000;
+  width: 100%;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.status-bar-spacer {
+  height: env(safe-area-inset-top, 20px);
+  width: 100%;
+  background: var(--bg);
+}
+
+.nav-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 0 var(--space-md);
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  height: 56px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  overflow: hidden;
+}
+
+.logo {
+  font-size: var(--font-size-logo);
+  font-weight: 900;
+  color: var(--primary);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.logo span {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.nav-actions {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.btn-icon {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.btn-icon:active {
+  transform: scale(0.9);
+  background: var(--card-hover);
+}
+
+/*
+ * Feed viewport.
+ *
+ * Height uses dvh so the snap points track the visual viewport as Android's
+ * WebView toolbar shows and hides; vh is kept as a fallback for older engines.
+ * Without this the item height drifts from the viewport and the snap positions
+ * land mid-card.
+ */
+#feed-container {
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  position: relative;
+  /* Stop Chrome's pull-to-refresh from competing with our own. */
+  overscroll-behavior-y: contain;
+}
+
+#feed-container::-webkit-scrollbar {
+  display: none;
+}
+
+.feed-item {
+  height: 100vh;
+  height: 100dvh;
+  width: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  /* Clear the fixed nav using the real nav height, not a magic number. */
+  padding-top: calc(var(--nav-height) + var(--space-sm));
+}
+
+#pull-indicator {
+  position: absolute;
+  top: calc(var(--nav-height) + 20px);
+  left: 0;
+  right: 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  z-index: 1500;
+  transition: transform 0.1s linear, opacity 0.2s;
+  pointer-events: none;
+  color: var(--primary);
+  opacity: 0;
+}
+
+.feed-message {
+  text-align: center;
+  padding: 100px var(--space-md);
+  opacity: 0.5;
+}
+
+#toast {
+  position: fixed;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 50px;
+  background: var(--primary);
+  color: #fff;
+  display: none;
+  z-index: 4000;
+  font-weight: 700;
+  max-width: 90vw;
+  text-align: center;
+}
