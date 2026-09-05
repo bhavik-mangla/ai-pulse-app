@@ -2,21 +2,38 @@
 
 import { fetchMetadata, fetchSources } from "./api.js";
 import { refitAll } from "./autofit.js";
+import { listBookmarks, loadBookmarks, toggleBookmark } from "./bookmarks.js";
 import { STORAGE_KEYS } from "./config.js";
 import { $ } from "./dom.js";
-import { flipCard, initObservers, loadFeed, setToastHandler } from "./feed.js";
+import {
+  flipCard,
+  initObservers,
+  itemById,
+  loadFeed,
+  renderSaved,
+  setStreakHandler,
+  setToastHandler,
+} from "./feed.js";
 import { initPullToRefresh, initTapToFlip } from "./gestures.js";
 import { haptic } from "./haptics.js";
+import { restoreDigest } from "./notify.js";
 import { SeenManager } from "./seen.js";
 import { saveInterests, state, writeStored } from "./state.js";
+import { loadStreak } from "./streak.js";
+import { FOR_YOU, initTopicSwipe, renderTopics } from "./topics.js";
+import { shareStory } from "./share.js";
 import {
   applyStrings,
   renderCountryOptions,
+  renderInterests,
   renderSourceFilter,
   setTheme,
   showToast,
+  changeDigestTime,
+  syncDigestControls,
+  syncSavedCount,
+  toggleDigest,
   toggleFilters,
-  renderInterests,
   toggleInterest,
   toggleTheme,
   updateHeaderDate,
@@ -24,6 +41,7 @@ import {
 
 function refresh() {
   haptic("impactLight");
+  state.showingSaved = false;
   loadFeed({ refresh: true });
 }
 
@@ -40,6 +58,14 @@ async function setCountry(code) {
   renderCountryOptions();
   state.sources = await fetchSources(code);
   renderSourceFilter();
+  refresh();
+}
+
+function setTopic(id) {
+  if (!id || id === state.topic) return;
+  state.topic = id;
+  state.showingSaved = false;
+  renderTopics();
   refresh();
 }
 
@@ -64,6 +90,49 @@ function resetFilters() {
   refresh();
 }
 
+/* --- Card actions --- */
+
+function itemFor(element) {
+  const card = element.closest(".feed-item");
+  return card ? itemById(card.dataset.id) : null;
+}
+
+async function onBookmark(element) {
+  const item = itemFor(element);
+  if (!item) return;
+  const saved = await toggleBookmark(item);
+  element.textContent = saved ? "★" : "☆";
+  element.classList.toggle("active", saved);
+  element.setAttribute("aria-pressed", String(saved));
+  element.setAttribute("aria-label", saved ? "Remove from saved" : "Save story");
+  syncSavedCount();
+  haptic("impactLight");
+  showToast(saved ? "Saved" : "Removed from saved", 1500);
+
+  /* Un-saving from within the saved list should remove it from view. */
+  if (state.showingSaved && !saved) showSaved();
+}
+
+async function onShare(element) {
+  const item = itemFor(element);
+  if (!item) return;
+  haptic("impactLight");
+  const result = await shareStory(item, { onStatus: showToast });
+  if (result === "unavailable") showToast("Sharing is not available on this device");
+}
+
+async function showSaved() {
+  state.showingSaved = true;
+  const items = await listBookmarks();
+  renderSaved(items);
+  toggleFilters(false);
+}
+
+function showFeed() {
+  state.showingSaved = false;
+  loadFeed({ refresh: true });
+}
+
 /*
  * All chrome interactions run through one delegated handler keyed on
  * data-action, so the markup carries no inline JavaScript. Inline handlers
@@ -77,10 +146,17 @@ const ACTIONS = {
   "toggle-top-stories": toggleTopStories,
   "reset-filters": resetFilters,
   "set-country": (el) => setCountry(el.dataset.country),
+  "set-topic": (el) => setTopic(el.dataset.topic),
   "toggle-interest": (el) => {
     toggleInterest(el.dataset.interest);
-    refresh();
+    if (state.topic === FOR_YOU) refresh();
   },
+  "bookmark": onBookmark,
+  "share": onShare,
+  "show-saved": showSaved,
+  "toggle-digest": () => toggleDigest(showToast),
+  "show-feed": showFeed,
+  "refresh-feed": refresh,
   "close-card": (el) => {
     const card = el.closest(".feed-item");
     if (card) flipCard(card);
@@ -106,6 +182,8 @@ function bindEvents() {
     $(id)?.addEventListener("change", refresh);
   });
 
+  $("digest-time")?.addEventListener("change", () => changeDigestTime(showToast));
+
   $("search-q")?.addEventListener("keypress", (event) => {
     if (event.key === "Enter") refresh();
   });
@@ -113,6 +191,7 @@ function bindEvents() {
   const container = $("feed-container");
   initPullToRefresh(container, $("pull-indicator"), refresh);
   initTapToFlip(container, flipCard);
+  initTopicSwipe(container, () => loadFeed({ refresh: true }));
 
   /* Headline sizing depends on viewport height, so re-fit when it changes. */
   let resizeTimer = null;
@@ -124,21 +203,29 @@ function bindEvents() {
 
 async function init() {
   setToastHandler(showToast);
+  setStreakHandler((streak) => {
+    showToast(`🔥 ${streak.current} day streak`, 2500);
+    haptic("notificationSuccess");
+  });
+
   updateHeaderDate();
   setTheme(document.documentElement.getAttribute("data-theme") || "dark");
   bindEvents();
   initObservers();
 
-  await SeenManager.init();
-  await fetchMetadata();
+  await Promise.all([SeenManager.init(), loadBookmarks(), loadStreak(), fetchMetadata()]);
 
   /* Persist the detected scope so the next launch does not re-detect it. */
   writeStored(STORAGE_KEYS.country, state.country);
-
   state.sources = await fetchSources(state.country);
 
   renderCountryOptions();
+  renderTopics();
   applyStrings();
+  syncSavedCount();
+  syncDigestControls();
+  restoreDigest();
+
   loadFeed();
 }
 

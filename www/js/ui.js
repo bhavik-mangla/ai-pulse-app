@@ -3,6 +3,8 @@
 import { CATEGORIES, COUNTRIES, I18N, STORAGE_KEYS, countryByCode } from "./config.js";
 import { $, escapeHtml } from "./dom.js";
 import { haptic } from "./haptics.js";
+import { bookmarkCount } from "./bookmarks.js";
+import { getSettings, isSupported, setDigest } from "./notify.js";
 import { saveInterests, state, writeStored } from "./state.js";
 import { formatHeaderDate } from "./time.js";
 
@@ -118,6 +120,8 @@ function applyStaticLabels(strings) {
     "label-search": strings.search,
     "label-date": strings.date,
     "label-top-stories": strings.topStoriesOnly,
+    "label-digest": strings.dailyReminder,
+    "label-saved": strings.saved,
     "btn-done": strings.done,
     "btn-reset": strings.reset,
   };
@@ -154,6 +158,75 @@ export function toggleFilters(show) {
     }, 300);
   }
   haptic("impactLight");
+}
+
+/* --- Saved --- */
+
+/** Show how many stories are saved, and hide the entry point when none are. */
+export function syncSavedCount() {
+  const count = bookmarkCount();
+  const badge = $("saved-count");
+  if (badge) {
+    badge.textContent = count ? String(count) : "";
+    badge.hidden = count === 0;
+  }
+}
+
+/* --- Daily reminder --- */
+
+export function syncDigestControls() {
+  const row = $("digest-row");
+  if (!row) return;
+
+  /*
+   * The row starts hidden in the markup so it never flashes on a device that
+   * cannot schedule notifications; reveal it once we know this one can.
+   */
+  row.hidden = !isSupported();
+  if (row.hidden) return;
+
+  const { enabled, time } = getSettings();
+  const toggle = $("btn-digest");
+  if (toggle) {
+    toggle.classList.toggle("active", enabled);
+    toggle.setAttribute("aria-pressed", String(enabled));
+  }
+  const picker = $("digest-time");
+  if (picker) {
+    picker.value = time;
+    picker.hidden = !enabled;
+  }
+}
+
+/**
+ * Turn the daily reminder on or off, reporting honestly what happened.
+ *
+ * A browser cannot schedule a notification for a future day without a service
+ * worker and a push subscription, so the setting is remembered but says so
+ * rather than silently doing nothing.
+ */
+export async function toggleDigest(onMessage) {
+  const { enabled } = getSettings();
+  const result = await setDigest(!enabled, $("digest-time")?.value);
+  syncDigestControls();
+  haptic("impactLight");
+
+  const messages = {
+    enabled: "Daily reminder on",
+    disabled: "Daily reminder off",
+    denied: "Notifications are blocked in your device settings",
+    "web-only": "Reminders only work in the installed app",
+    unsupported: "Reminders are not available on this device",
+  };
+  onMessage?.(messages[result] || "");
+}
+
+export async function changeDigestTime(onMessage) {
+  const { enabled } = getSettings();
+  if (!enabled) return;
+  const result = await setDigest(true, $("digest-time")?.value);
+  syncDigestControls();
+  if (result === "enabled") onMessage?.("Reminder time updated");
 }
 
 export function updateHeaderDate() {

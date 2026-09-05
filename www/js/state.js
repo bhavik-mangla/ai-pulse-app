@@ -34,6 +34,10 @@ export const state = {
   renderedIds: new Set(),
   /* Topics the reader chose; empty means show everything. */
   interests: new Set(readStored(STORAGE_KEYS.interests, "").split(",").filter(Boolean)),
+  /* Which topic tab is active. FOR_YOU means "use my interests". */
+  topic: "__for_you__",
+  /* True while the saved-stories list is showing instead of the feed. */
+  showingSaved: false,
 };
 
 /** Persist the chosen interests. */

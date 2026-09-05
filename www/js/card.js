@@ -2,6 +2,7 @@
 
 import { API_BASE, CATEGORIES, I18N, LOGO_EXT } from "./config.js";
 import { escapeHtml, safeCssUrl, safeUrl } from "./dom.js";
+import { isBookmarked } from "./bookmarks.js";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=1000";
@@ -71,6 +72,7 @@ export function renderCard(item, lang) {
     ? `${category.emoji ? `${category.emoji} ` : ""}${category[lang] || category.en}`
     : strings.general;
 
+  const saved = isBookmarked(item.id);
   const sourceLabel = String(item.source_name || item.source_id || "").toUpperCase();
   const link = safeUrl(item.fetch_url) || safeUrl(item.source_url);
 
@@ -103,6 +105,14 @@ export function renderCard(item, lang) {
                 <div class="card-meta-left">
                   <span data-timeago="${escapeHtml(item.published_at || item.created_at || "")}"></span>
                 </div>
+                <div class="card-actions">
+                  <button class="card-action${saved ? " active" : ""}" data-action="bookmark"
+                          aria-label="${saved ? "Remove from saved" : "Save story"}"
+                          aria-pressed="${saved}">${saved ? "★" : "☆"}</button>
+                  <button class="card-action" data-action="share" aria-label="Share story">↗</button>
+                </div>
+              </div>
+              <div class="card-meta-row">
                 <span class="card-meta-hint">${escapeHtml(strings.details.toUpperCase())}</span>
               </div>
             </div>

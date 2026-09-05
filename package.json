@@ -8,14 +8,17 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Short news cards you swipe through, one story per screen.",
   "dependencies": {
     "@capacitor/android": "^8.3.4",
     "@capacitor/cli": "^7.6.5",
     "@capacitor/core": "^8.3.4",
+    "@capacitor/filesystem": "^7.0.0",
     "@capacitor/haptics": "^8.0.2",
     "@capacitor/ios": "^8.3.4",
     "@capacitor/keyboard": "^8.0.3",
+    "@capacitor/local-notifications": "^7.0.0",
+    "@capacitor/share": "^7.0.0",
     "@capacitor/status-bar": "^8.0.2"
   },
   "devDependencies": {

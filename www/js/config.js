@@ -131,6 +131,8 @@ export const I18N = {
     theme: "Theme",
     done: "Done",
     reset: "Reset filters",
+    saved: "Saved stories",
+    dailyReminder: "Daily reminder",
   },
 };
 

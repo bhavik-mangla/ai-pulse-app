@@ -52,12 +52,21 @@
           <button class="btn-icon" id="country-btn" data-action="open-filters" aria-label="Region">
             🌍
           </button>
+          <button class="btn-icon btn-saved" data-action="show-saved" aria-label="Saved stories">
+            ★<span class="count-badge" id="saved-count" hidden></span>
+          </button>
           <button class="btn-icon" data-action="open-filters" aria-label="Preferences">⚙️</button>
           <button class="btn-icon" id="theme-btn" data-action="toggle-theme" aria-label="Toggle theme">
             🌙
           </button>
         </div>
       </div>
+
+      <!--
+        Topic tabs are the primary navigation. Swiping the feed horizontally
+        moves between them, so changing topic never needs the settings sheet.
+      -->
+      <div id="topic-strip" class="topic-strip" role="tablist" aria-label="Topics"></div>
     </nav>
 
     <div id="pull-indicator">↓</div>
@@ -113,6 +122,21 @@
         <div class="filter-group">
           <button id="btn-top-stories" class="btn-toggle" data-action="toggle-top-stories">
             <span id="label-top-stories">Top Stories Only</span> ⭐
+          </button>
+        </div>
+
+        <div class="filter-group setting-row" id="digest-row" hidden>
+          <span class="filter-label" id="label-digest">Daily reminder</span>
+          <div class="setting-controls">
+            <input type="time" id="digest-time" class="filter-time" hidden />
+            <button class="btn-chip" id="btn-digest" data-action="toggle-digest"
+                    role="switch" aria-pressed="false">🔔</button>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <button class="btn-toggle" data-action="show-saved">
+            <span id="label-saved">Saved stories</span> ★
           </button>
         </div>
 
