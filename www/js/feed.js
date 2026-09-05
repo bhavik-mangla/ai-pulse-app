@@ -27,12 +27,11 @@ export function setToastHandler(fn) {
 export function currentFilters() {
   return {
     query: valueOf("search-q"),
-    feedType: state.feedType,
+    country: state.country,
     sourceId: valueOf("sel-src"),
     category: valueOf("sel-cat"),
-    audience: valueOf("sel-audience"),
     date: valueOf("filter-date"),
-    highImpactOnly: state.highImpactOnly,
+    topStoriesOnly: state.topStoriesOnly,
   };
 }
 
@@ -200,7 +199,14 @@ export async function loadFeed({ refresh = false, append = false } = {}) {
        */
       state.page = lastFetchedPage + 1;
     } else if (isInitial && state.renderedIds.size === 0 && container) {
-      renderMessage(container, state.endReached ? strings.caughtUp : strings.noNewItems);
+      const hasFilters = Boolean(
+        filters.query || filters.category || filters.sourceId ||
+        filters.date || filters.topStoriesOnly
+      );
+      renderMessage(
+        container,
+        hasFilters ? strings.noRecords : state.endReached ? strings.caughtUp : strings.noNewItems
+      );
     }
   } finally {
     state.isLoading = false;

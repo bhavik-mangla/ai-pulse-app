@@ -1,6 +1,13 @@
-/* Chrome: theme, language, the preferences sheet and toasts. */
+/* Chrome: theme, language, region picker, preferences sheet and toasts. */
 
-import { AUDIENCES, CATEGORIES, I18N, STORAGE_KEYS } from "./config.js";
+import {
+  CATEGORIES,
+  COUNTRIES,
+  I18N,
+  STORAGE_KEYS,
+  countryByCode,
+  offersHindi,
+} from "./config.js";
 import { $, escapeHtml } from "./dom.js";
 import { haptic } from "./haptics.js";
 import { state, writeStored } from "./state.js";
@@ -24,12 +31,50 @@ export function showToast(message, duration = 3000) {
 export function setTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
   writeStored(STORAGE_KEYS.theme, theme);
+  const btn = $("theme-btn");
+  if (btn) btn.textContent = theme === "dark" ? "🌙" : "☀️";
 }
 
 export function toggleTheme() {
   const current = document.documentElement.getAttribute("data-theme");
   setTheme(current === "dark" ? "light" : "dark");
   haptic("impactLight");
+}
+
+/* --- Region --- */
+
+/** Render the scope chips; the active one is reflected in the header too. */
+export function renderCountryOptions() {
+  const wrap = $("country-options");
+  if (!wrap) return;
+  wrap.innerHTML = COUNTRIES.map(
+    (c) => `
+      <button class="chip${c.code === state.country ? " active" : ""}"
+              data-action="set-country" data-country="${escapeHtml(c.code)}">
+        <span class="chip-flag">${escapeHtml(c.flag || "")}</span>
+        ${escapeHtml(c.name)}
+      </button>`
+  ).join("");
+  syncCountryChip();
+}
+
+function syncCountryChip() {
+  const country = countryByCode(state.country);
+  const btn = $("country-btn");
+  if (btn) {
+    btn.textContent = country.flag || country.name;
+    btn.setAttribute("aria-label", `Region: ${country.name}`);
+  }
+}
+
+/*
+ * Hindi is only generated for scopes that are offered it, so the toggle is
+ * hidden elsewhere rather than switching the UI into a language the article
+ * summaries are not available in.
+ */
+export function syncLanguageAvailability() {
+  const row = $("language-row");
+  if (row) row.hidden = !offersHindi(state.country);
 }
 
 /* --- Language --- */
@@ -57,31 +102,46 @@ export function setLang(lang) {
   fillSelect(
     "sel-cat",
     strings.allCats,
-    CATEGORIES.map((c) => ({ value: c.id, label: c[lang] || c.en }))
-  );
-  fillSelect(
-    "sel-audience",
-    strings.whoAreYou,
-    AUDIENCES.map((a) => ({ value: a, label: a }))
+    CATEGORIES.map((c) => ({
+      value: c.id,
+      label: `${c.emoji ? `${c.emoji} ` : ""}${c[lang] || c.en}`,
+    }))
   );
 
-  const audienceLabel = $("label-audience");
-  if (audienceLabel) audienceLabel.textContent = strings.whoAreYou;
-
-  const impactLabel = $("label-high-impact");
-  if (impactLabel) impactLabel.textContent = strings.highImpactOnly;
-
+  applyStaticLabels(strings);
   renderSourceFilter();
+}
+
+/** Text that lives in the sheet rather than being generated per item. */
+function applyStaticLabels(strings) {
+  const labels = {
+    "sheet-title": strings.preferences,
+    "label-region": strings.region,
+    "label-cat": strings.topic,
+    "label-src": strings.sourceLabel,
+    "label-search": strings.search,
+    "label-date": strings.date,
+    "label-language": strings.language,
+    "label-top-stories": strings.topStoriesOnly,
+    "btn-done": strings.done,
+    "btn-reset": strings.reset,
+  };
+  for (const [id, text] of Object.entries(labels)) {
+    const el = $(id);
+    if (el) el.textContent = text;
+  }
+  const search = $("search-q");
+  if (search) search.placeholder = strings.search;
 }
 
 /* --- Source filter --- */
 
 export function renderSourceFilter() {
-  const isNewsSource = (s) => s.id.includes("top_stories");
-  const options = state.sources
-    .filter((s) => (state.feedType === "news" ? isNewsSource(s) : !isNewsSource(s)))
-    .map((s) => ({ value: s.id, label: s.name }));
-  fillSelect("sel-src", I18N[state.lang].allPortals, options);
+  fillSelect(
+    "sel-src",
+    I18N[state.lang].allSources,
+    state.sources.map((s) => ({ value: s.id, label: s.name }))
+  );
 }
 
 /* --- Preferences sheet --- */

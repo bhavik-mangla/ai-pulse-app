@@ -51,34 +51,93 @@
   font-weight: 800;
 }
 
-.feed-type-toggle {
+/* Region chips. Horizontal scroll keeps more scopes usable on a phone. */
+.chip-row {
   display: flex;
   gap: 8px;
-  margin-bottom: 24px;
-  background: var(--bg);
-  padding: 4px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 
-.feed-type-btn {
-  flex: 1;
-  padding: 10px;
-  border-radius: 10px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
+.chip-row::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
   font-weight: 700;
   font-size: 0.85rem;
   cursor: pointer;
   transition: var(--transition);
-  font-family: inherit;
+  white-space: nowrap;
 }
 
-.feed-type-btn.active {
-  background: var(--card-bg);
-  color: var(--primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.chip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #000;
+}
+
+.chip:active {
+  transform: scale(0.96);
+}
+
+.chip-flag {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* A label and a control on one line, for simple settings. */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.setting-row .filter-label {
+  margin-bottom: 0;
+}
+
+.btn-chip {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-chip:active {
+  transform: scale(0.96);
+}
+
+.sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: var(--space-md);
+}
+
+/* In the action row the secondary button sits above and needs no top margin. */
+.sheet-actions .btn-secondary {
+  margin-top: 0;
+  order: 2;
 }
 
 .filter-group {

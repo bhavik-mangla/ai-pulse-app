@@ -9,95 +9,145 @@ export const CACHE_NAME = "aipulse-cache";
 export const STORAGE_KEYS = {
   theme: "gov_theme",
   lang: "gov_lang",
+  country: "feed_country",
 };
 
-/* File extension per source logo bundled under assets/logos/. */
+/*
+ * Feed scopes. Overridden at runtime from /config/metadata so a scope added
+ * on the server appears without shipping an app update; these are the offline
+ * defaults and the ordering the picker uses.
+ */
+export let COUNTRIES = [
+  { code: "world", name: "World", flag: "🌍" },
+  { code: "in", name: "India", flag: "🇮🇳" },
+  { code: "us", name: "United States", flag: "🇺🇸" },
+];
+
+export const DEFAULT_COUNTRY = "world";
+
+/* Scopes offered a Hindi translation; mirrors what the backend generates. */
+export const HINDI_COUNTRIES = new Set(["in"]);
+
+/*
+ * File extension of the logo bundled under assets/logos/ for a source.
+ *
+ * Only the three original Indian outlets ship a bundled logo. Everything else
+ * relies on the article image the backend resolves, falling back to the card
+ * placeholder; there is no point shipping binary assets for outlets whose
+ * feeds carry per-article images.
+ */
 export const LOGO_EXT = {
-  egazette_central: "svg",
   et_top_stories: "png",
-  ibbi_updates: "png",
-  income_tax: "png",
-  irdai_updates: "webp",
-  mca_updates: "png",
-  meity_updates: "svg",
-  mha_updates: "svg",
   mint_top_stories: "png",
-  pib_press_releases: "jpg",
-  rbi_circulars: "png",
-  rbi_press_releases: "png",
-  sebi_news: "jpg",
   bs_top_stories: "png",
 };
 
-/* Overridden at runtime by /config/metadata; these are the offline defaults. */
+/*
+ * Topic categories. Replaced at runtime by /config/metadata. These defaults
+ * are general-news topics; the app previously shipped the government notice
+ * taxonomy (jobs, schemes, gazette, tax) which no longer matches anything the
+ * backend produces.
+ */
 export let CATEGORIES = [
-  { id: "jobs", en: "Jobs", hi: "नौकरियां" },
-  { id: "schemes", en: "Schemes", hi: "योजनाएं" },
-  { id: "tax", en: "Tax", hi: "कर (Tax)" },
-  { id: "agriculture", en: "Agriculture", hi: "कृषि" },
-  { id: "education", en: "Education", hi: "शिक्षा" },
-  { id: "health", en: "Health", hi: "स्वास्थ्य" },
-  { id: "legal", en: "Legal", hi: "कानूनी" },
-  { id: "gazette", en: "Gazette", hi: "राजपत्र" },
-  { id: "finance", en: "Finance", hi: "वित्त" },
-  { id: "infrastructure", en: "Infrastructure", hi: "बुनियादी ढांचा" },
-  { id: "environment", en: "Environment", hi: "पर्यावरण" },
-  { id: "defense", en: "Defense", hi: "रक्षा" },
-  { id: "technology", en: "Technology", hi: "प्रौद्योगिकी" },
-  { id: "local_governance", en: "Local Governance", hi: "स्थानीय शासन" },
-  { id: "women_child", en: "Women & Child", hi: "महिला एवं बाल" },
-  { id: "social_welfare", en: "Social Welfare", hi: "समाज कल्याण" },
-  { id: "other", en: "Other", hi: "अन्य" },
-];
-
-export let AUDIENCES = [
-  "Retail Investors", "Farmers", "MSMEs", "Students", "Corporate Legal",
-  "Tax Professionals", "Chartered Accountants", "Bankers", "Insurance Professionals",
-  "Insolvency Professionals", "Fintech Entities", "Healthcare Providers", "Exporters",
-  "Tech Professionals",
+  { id: "world", en: "World", hi: "विश्व", emoji: "🌍" },
+  { id: "business", en: "Business", hi: "व्यापार", emoji: "📈" },
+  { id: "politics", en: "Politics", hi: "राजनीति", emoji: "🏛" },
+  { id: "technology", en: "Technology", hi: "प्रौद्योगिकी", emoji: "💻" },
+  { id: "science", en: "Science", hi: "विज्ञान", emoji: "🔬" },
+  { id: "health", en: "Health", hi: "स्वास्थ्य", emoji: "🏥" },
+  { id: "sports", en: "Sports", hi: "खेल", emoji: "⚽" },
+  { id: "entertainment", en: "Entertainment", hi: "मनोरंजन", emoji: "🎬" },
+  { id: "environment", en: "Environment", hi: "पर्यावरण", emoji: "🌱" },
+  { id: "education", en: "Education", hi: "शिक्षा", emoji: "🎓" },
+  { id: "other", en: "Other", hi: "अन्य", emoji: "🔗" },
 ];
 
 export function setCategories(next) {
   if (Array.isArray(next) && next.length) CATEGORIES = next;
 }
 
-export function setAudiences(next) {
-  if (Array.isArray(next) && next.length) AUDIENCES = next;
+export function setCountries(next) {
+  if (Array.isArray(next) && next.length) COUNTRIES = next;
+}
+
+export function countryByCode(code) {
+  return COUNTRIES.find((c) => c.code === code) || COUNTRIES[0];
+}
+
+export function offersHindi(code) {
+  return HINDI_COUNTRIES.has(code);
+}
+
+/**
+ * Best-guess scope for a first run, from the device's region.
+ *
+ * Falls back to World, which is also the right answer for any region we do
+ * not carry a dedicated feed for.
+ */
+export function detectCountry() {
+  try {
+    const locales = navigator.languages?.length ? navigator.languages : [navigator.language];
+    for (const locale of locales) {
+      const region = String(locale).split("-")[1]?.toLowerCase();
+      if (region && COUNTRIES.some((c) => c.code === region)) return region;
+    }
+  } catch {
+    /* Locale unavailable; World is a safe default. */
+  }
+  return DEFAULT_COUNTRY;
 }
 
 export const I18N = {
   en: {
     details: "Breakdown",
-    source: "Official Source",
+    source: "Read Full Story",
     back: "Close",
     noSummary: "No summary available.",
-    allCats: "All Categories",
-    allPortals: "All Portals",
-    whoAreYou: "Who are you?",
-    highImpactOnly: "High Impact Only",
+    allCats: "All Topics",
+    allSources: "All Sources",
+    topStoriesOnly: "Top Stories Only",
     general: "General",
     caughtUp: "You are all caught up!",
-    noNewItems: "No new items found. Try again later.",
-    noRecords: "No records found.",
+    noNewItems: "No new stories right now. Pull down to refresh.",
+    noRecords: "Nothing matches these filters.",
     networkError: "Network error. Check your connection.",
     serverError: "Server error. Please try again later.",
     rateLimited: "Too many requests. Please wait a moment.",
+    preferences: "Preferences",
+    region: "Region",
+    topic: "Topic",
+    sourceLabel: "Source",
+    search: "Search",
+    date: "Date",
+    language: "Language",
+    theme: "Theme",
+    done: "Done",
+    reset: "Reset filters",
   },
   hi: {
     details: "सारांश",
-    source: "आधिकारिक स्रोत",
+    source: "पूरी खबर पढ़ें",
     back: "बंद करें",
     noSummary: "सारांश उपलब्ध नहीं है।",
-    allCats: "सभी श्रेणियां",
-    allPortals: "सभी पोर्टल",
-    whoAreYou: "आप कौन हैं?",
-    highImpactOnly: "केवल उच्च प्रभाव",
+    allCats: "सभी विषय",
+    allSources: "सभी स्रोत",
+    topStoriesOnly: "केवल प्रमुख खबरें",
     general: "सामान्य",
     caughtUp: "आप पूरी तरह अपडेट हैं!",
-    noNewItems: "कोई नया आइटम नहीं मिला। बाद में पुनः प्रयास करें।",
-    noRecords: "कोई रिकॉर्ड नहीं मिला।",
+    noNewItems: "अभी कोई नई खबर नहीं। रिफ्रेश करने के लिए नीचे खींचें।",
+    noRecords: "इन फ़िल्टरों से कुछ मेल नहीं खाता।",
     networkError: "नेटवर्क त्रुटि। अपना कनेक्शन जांचें।",
     serverError: "सर्वर त्रुटि। कृपया बाद में पुनः प्रयास करें।",
     rateLimited: "बहुत अधिक अनुरोध। कृपया थोड़ा प्रतीक्षा करें।",
+    preferences: "प्राथमिकताएं",
+    region: "क्षेत्र",
+    topic: "विषय",
+    search: "खोजें",
+    date: "तारीख",
+    sourceLabel: "स्रोत",
+    language: "भाषा",
+    theme: "थीम",
+    done: "पूर्ण",
+    reset: "फ़िल्टर रीसेट करें",
   },
 };

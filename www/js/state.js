@@ -1,6 +1,6 @@
 /* Mutable app state shared between modules. */
 
-import { STORAGE_KEYS } from "./config.js";
+import { DEFAULT_COUNTRY, STORAGE_KEYS, detectCountry } from "./config.js";
 
 /** Safe localStorage read: private mode and blocked site data both throw. */
 export function readStored(key, fallback) {
@@ -21,11 +21,15 @@ export function writeStored(key, value) {
 
 export const state = {
   lang: readStored(STORAGE_KEYS.lang, "en"),
-  feedType: "news",
+  /*
+   * Feed scope. Seeded from the device region on first run so a reader lands
+   * on something relevant without being asked, and remembered thereafter.
+   */
+  country: readStored(STORAGE_KEYS.country, "") || detectCountry() || DEFAULT_COUNTRY,
   page: 1,
   isLoading: false,
   endReached: false,
-  highImpactOnly: false,
+  topStoriesOnly: false,
   sources: [],
   renderedIds: new Set(),
 };

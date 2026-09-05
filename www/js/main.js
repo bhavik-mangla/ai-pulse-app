@@ -2,16 +2,20 @@
 
 import { fetchMetadata, fetchSources } from "./api.js";
 import { refitAll } from "./autofit.js";
+import { STORAGE_KEYS, offersHindi } from "./config.js";
 import { $ } from "./dom.js";
 import { flipCard, initObservers, loadFeed, setToastHandler } from "./feed.js";
 import { initPullToRefresh, initTapToFlip } from "./gestures.js";
 import { haptic } from "./haptics.js";
 import { SeenManager } from "./seen.js";
-import { state } from "./state.js";
+import { state, writeStored } from "./state.js";
 import {
+  renderCountryOptions,
   renderSourceFilter,
   setLang,
+  setTheme,
   showToast,
+  syncLanguageAvailability,
   toggleFilters,
   toggleTheme,
   updateHeaderDate,
@@ -22,22 +26,46 @@ function refresh() {
   loadFeed({ refresh: true });
 }
 
-function setFeedType(type) {
-  state.feedType = type;
-  $("btn-type-news")?.classList.toggle("active", type === "news");
-  $("btn-type-official")?.classList.toggle("active", type === "official");
+/** Switch feed scope: reload the outlets for it, then the feed itself. */
+async function setCountry(code) {
+  if (!code || code === state.country) return;
+  state.country = code;
+  writeStored(STORAGE_KEYS.country, code);
+
+  /* Hindi only exists for scopes that generate it. */
+  if (!offersHindi(code) && state.lang !== "en") setLang("en");
+  syncLanguageAvailability();
+
+  /* A source filter from the previous scope would match nothing here. */
+  const sourceSelect = $("sel-src");
+  if (sourceSelect) sourceSelect.value = "";
+
+  renderCountryOptions();
+  state.sources = await fetchSources(code);
   renderSourceFilter();
   refresh();
 }
 
-function toggleHighImpact() {
-  state.highImpactOnly = !state.highImpactOnly;
-  $("btn-high-impact")?.classList.toggle("active", state.highImpactOnly);
+function toggleTopStories() {
+  state.topStoriesOnly = !state.topStoriesOnly;
+  $("btn-top-stories")?.classList.toggle("active", state.topStoriesOnly);
   refresh();
 }
 
 function toggleLang() {
   setLang(state.lang === "en" ? "hi" : "en");
+  refresh();
+}
+
+/** Clear every filter without touching the chosen scope. */
+function resetFilters() {
+  ["search-q", "sel-cat", "sel-src", "filter-date"].forEach((id) => {
+    const el = $(id);
+    if (el) el.value = "";
+  });
+  state.topStoriesOnly = false;
+  $("btn-top-stories")?.classList.remove("active");
+  haptic("impactLight");
   refresh();
 }
 
@@ -52,9 +80,9 @@ const ACTIONS = {
   "toggle-theme": toggleTheme,
   "open-filters": () => toggleFilters(true),
   "close-filters": () => toggleFilters(false),
-  "feed-news": () => setFeedType("news"),
-  "feed-official": () => setFeedType("official"),
-  "toggle-high-impact": toggleHighImpact,
+  "toggle-top-stories": toggleTopStories,
+  "reset-filters": resetFilters,
+  "set-country": (el) => setCountry(el.dataset.country),
   "close-card": (el) => {
     const card = el.closest(".feed-item");
     if (card) flipCard(card);
@@ -76,7 +104,7 @@ function bindEvents() {
     if (event.target.id === "filters-overlay") toggleFilters(false);
   });
 
-  ["sel-src", "sel-cat", "sel-audience", "filter-date"].forEach((id) => {
+  ["sel-src", "sel-cat", "filter-date"].forEach((id) => {
     $(id)?.addEventListener("change", refresh);
   });
 
@@ -99,13 +127,20 @@ function bindEvents() {
 async function init() {
   setToastHandler(showToast);
   updateHeaderDate();
+  setTheme(document.documentElement.getAttribute("data-theme") || "dark");
   bindEvents();
   initObservers();
 
   await SeenManager.init();
   await fetchMetadata();
-  state.sources = await fetchSources();
 
+  /* Persist the detected scope so the next launch does not re-detect it. */
+  writeStored(STORAGE_KEYS.country, state.country);
+
+  state.sources = await fetchSources(state.country);
+
+  renderCountryOptions();
+  syncLanguageAvailability();
   setLang(state.lang);
   loadFeed();
 }
